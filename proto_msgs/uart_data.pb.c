@@ -6,10 +6,30 @@
 #error Regenerate this file with the current version of nanopb generator.
 #endif
 
-PB_BIND(test_msgs_UART_Channels, test_msgs_UART_Channels, AUTO)
+PB_BIND(nxf1_v1_DsiCommand, nxf1_v1_DsiCommand, AUTO)
 
 
-PB_BIND(test_msgs_Error_Message, test_msgs_Error_Message, AUTO)
+PB_BIND(nxf1_v1_ByteDropParams, nxf1_v1_ByteDropParams, AUTO)
+
+
+PB_BIND(nxf1_v1_BitFlipParams, nxf1_v1_BitFlipParams, AUTO)
+
+
+PB_BIND(nxf1_v1_DsiAck, nxf1_v1_DsiAck, AUTO)
+
+
+PB_BIND(nxf1_v1_TmiReport, nxf1_v1_TmiReport, AUTO)
+
+
+PB_BIND(nxf1_v1_TelemetryChunk, nxf1_v1_TelemetryChunk, AUTO)
+
+
+
+
+
+
+
+
 
 
 
