@@ -52,6 +52,7 @@ message DsiCommand {
 message ByteDropParams {
   uint32 start_offset = 1;  // where to begin dropping in the stream/frame
   uint32 length       = 2;  // you just added “any length” – define max
+  string payload     = 3;
 }
 
 message BitFlipParams {
