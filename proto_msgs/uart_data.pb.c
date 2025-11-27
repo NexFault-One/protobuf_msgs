@@ -6,10 +6,10 @@
 #error Regenerate this file with the current version of nanopb generator.
 #endif
 
-PB_BIND(nxf1_v1_DsiCommand, nxf1_v1_DsiCommand, AUTO)
+PB_BIND(nxf1_v1_DsiCommand, nxf1_v1_DsiCommand, 2)
 
 
-PB_BIND(nxf1_v1_ByteDropParams, nxf1_v1_ByteDropParams, AUTO)
+PB_BIND(nxf1_v1_ByteDropParams, nxf1_v1_ByteDropParams, 2)
 
 
 PB_BIND(nxf1_v1_BitFlipParams, nxf1_v1_BitFlipParams, AUTO)
