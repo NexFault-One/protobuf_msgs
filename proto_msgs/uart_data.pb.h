@@ -40,6 +40,11 @@ typedef enum _nxf1_v1_TestVerdict {
     nxf1_v1_TestVerdict_VERDICT_FAIL = 2
 } nxf1_v1_TestVerdict;
 
+typedef enum _nxf1_v1_BitFlipMode {
+    nxf1_v1_BitFlipMode_RANDOM = 0,
+    nxf1_v1_BitFlipMode_PERIODIC = 1
+} nxf1_v1_BitFlipMode;
+
 /* Struct definitions */
 /* Per-injection parameter blocks */
 typedef struct _nxf1_v1_ByteDropParams {
@@ -49,9 +54,10 @@ typedef struct _nxf1_v1_ByteDropParams {
 } nxf1_v1_ByteDropParams;
 
 typedef struct _nxf1_v1_BitFlipParams {
-    uint32_t start_offset;
-    uint32_t length; /* span affected */
-    pb_callback_t xor_mask; /* length bytes; repeat or clip as needed */
+    uint32_t every_n_p; /* if periodic, every_n bits to drop */
+    uint32_t bits_drop; /* bits to drop randomly */
+    char payload[512]; /* the message */
+    nxf1_v1_BitFlipMode mode; /* mode */
 } nxf1_v1_BitFlipParams;
 
 /* Host -> DSI */
@@ -122,10 +128,15 @@ extern "C" {
 #define _nxf1_v1_TestVerdict_MAX nxf1_v1_TestVerdict_VERDICT_FAIL
 #define _nxf1_v1_TestVerdict_ARRAYSIZE ((nxf1_v1_TestVerdict)(nxf1_v1_TestVerdict_VERDICT_FAIL+1))
 
+#define _nxf1_v1_BitFlipMode_MIN nxf1_v1_BitFlipMode_RANDOM
+#define _nxf1_v1_BitFlipMode_MAX nxf1_v1_BitFlipMode_PERIODIC
+#define _nxf1_v1_BitFlipMode_ARRAYSIZE ((nxf1_v1_BitFlipMode)(nxf1_v1_BitFlipMode_PERIODIC+1))
+
 #define nxf1_v1_DsiCommand_cmd_ENUMTYPE nxf1_v1_CommandType
 #define nxf1_v1_DsiCommand_inj_type_ENUMTYPE nxf1_v1_InjectionType
 
 
+#define nxf1_v1_BitFlipParams_mode_ENUMTYPE nxf1_v1_BitFlipMode
 
 #define nxf1_v1_DsiAck_status_ENUMTYPE nxf1_v1_ExecStatus
 
@@ -137,13 +148,13 @@ extern "C" {
 /* Initializer values for message structs */
 #define nxf1_v1_DsiCommand_init_default          {0, 0, _nxf1_v1_CommandType_MIN, _nxf1_v1_InjectionType_MIN, 0, 0, {nxf1_v1_ByteDropParams_init_default}}
 #define nxf1_v1_ByteDropParams_init_default      {0, 0, ""}
-#define nxf1_v1_BitFlipParams_init_default       {0, 0, {{NULL}, NULL}}
+#define nxf1_v1_BitFlipParams_init_default       {0, 0, "", _nxf1_v1_BitFlipMode_MIN}
 #define nxf1_v1_DsiAck_init_default              {0, _nxf1_v1_ExecStatus_MIN, 0}
 #define nxf1_v1_TmiReport_init_default           {0, _nxf1_v1_ExecStatus_MIN, _nxf1_v1_TestVerdict_MIN, 0, 0, 0, 0, 0, 0, false, nxf1_v1_TelemetryChunk_init_default}
 #define nxf1_v1_TelemetryChunk_init_default      {0, 0, {{NULL}, NULL}, 0}
 #define nxf1_v1_DsiCommand_init_zero             {0, 0, _nxf1_v1_CommandType_MIN, _nxf1_v1_InjectionType_MIN, 0, 0, {nxf1_v1_ByteDropParams_init_zero}}
 #define nxf1_v1_ByteDropParams_init_zero         {0, 0, ""}
-#define nxf1_v1_BitFlipParams_init_zero          {0, 0, {{NULL}, NULL}}
+#define nxf1_v1_BitFlipParams_init_zero          {0, 0, "", _nxf1_v1_BitFlipMode_MIN}
 #define nxf1_v1_DsiAck_init_zero                 {0, _nxf1_v1_ExecStatus_MIN, 0}
 #define nxf1_v1_TmiReport_init_zero              {0, _nxf1_v1_ExecStatus_MIN, _nxf1_v1_TestVerdict_MIN, 0, 0, 0, 0, 0, 0, false, nxf1_v1_TelemetryChunk_init_zero}
 #define nxf1_v1_TelemetryChunk_init_zero         {0, 0, {{NULL}, NULL}, 0}
@@ -152,9 +163,10 @@ extern "C" {
 #define nxf1_v1_ByteDropParams_start_offset_tag  1
 #define nxf1_v1_ByteDropParams_length_tag        2
 #define nxf1_v1_ByteDropParams_payload_tag       3
-#define nxf1_v1_BitFlipParams_start_offset_tag   1
-#define nxf1_v1_BitFlipParams_length_tag         2
-#define nxf1_v1_BitFlipParams_xor_mask_tag       3
+#define nxf1_v1_BitFlipParams_every_n_p_tag      1
+#define nxf1_v1_BitFlipParams_bits_drop_tag      2
+#define nxf1_v1_BitFlipParams_payload_tag        3
+#define nxf1_v1_BitFlipParams_mode_tag           4
 #define nxf1_v1_DsiCommand_proto_version_tag     1
 #define nxf1_v1_DsiCommand_id_tag                2
 #define nxf1_v1_DsiCommand_cmd_tag               3
@@ -202,10 +214,11 @@ X(a, STATIC,   SINGULAR, STRING,   payload,           3)
 #define nxf1_v1_ByteDropParams_DEFAULT NULL
 
 #define nxf1_v1_BitFlipParams_FIELDLIST(X, a) \
-X(a, STATIC,   SINGULAR, UINT32,   start_offset,      1) \
-X(a, STATIC,   SINGULAR, UINT32,   length,            2) \
-X(a, CALLBACK, SINGULAR, BYTES,    xor_mask,          3)
-#define nxf1_v1_BitFlipParams_CALLBACK pb_default_field_callback
+X(a, STATIC,   SINGULAR, UINT32,   every_n_p,         1) \
+X(a, STATIC,   SINGULAR, UINT32,   bits_drop,         2) \
+X(a, STATIC,   SINGULAR, STRING,   payload,           3) \
+X(a, STATIC,   SINGULAR, UENUM,    mode,              4)
+#define nxf1_v1_BitFlipParams_CALLBACK NULL
 #define nxf1_v1_BitFlipParams_DEFAULT NULL
 
 #define nxf1_v1_DsiAck_FIELDLIST(X, a) \
@@ -254,13 +267,13 @@ extern const pb_msgdesc_t nxf1_v1_TelemetryChunk_msg;
 #define nxf1_v1_TelemetryChunk_fields &nxf1_v1_TelemetryChunk_msg
 
 /* Maximum encoded size of messages (where known) */
-/* nxf1_v1_DsiCommand_size depends on runtime parameters */
-/* nxf1_v1_BitFlipParams_size depends on runtime parameters */
 /* nxf1_v1_TmiReport_size depends on runtime parameters */
 /* nxf1_v1_TelemetryChunk_size depends on runtime parameters */
-#define NXF1_V1_UART_DATA_PB_H_MAX_SIZE          nxf1_v1_ByteDropParams_size
+#define NXF1_V1_UART_DATA_PB_H_MAX_SIZE          nxf1_v1_DsiCommand_size
+#define nxf1_v1_BitFlipParams_size               528
 #define nxf1_v1_ByteDropParams_size              526
 #define nxf1_v1_DsiAck_size                      14
+#define nxf1_v1_DsiCommand_size                  553
 
 #ifdef __cplusplus
 } /* extern "C" */

@@ -32,6 +32,11 @@ enum TestVerdict {
   VERDICT_FAIL  = 2;
 }
 
+enum BitFlipMode {
+  RANDOM = 0;
+  PERIODIC = 1;
+}
+
 // Host -> DSI
 message DsiCommand {
   uint32 proto_version   = 1;   // e.g., 1
@@ -56,9 +61,10 @@ message ByteDropParams {
 }
 
 message BitFlipParams {
-  uint32 start_offset = 1;
-  uint32 length       = 2;     // span affected
-  bytes  xor_mask     = 3;     // length bytes; repeat or clip as needed
+  uint32 every_n_p = 1; // if periodic, every_n bits to drop
+  uint32 bits_drop       = 2;     // bits to drop randomly
+  string payload     = 3;     // the message
+  BitFlipMode mode = 4; // mode
 }
 
 // DSI/TMI -> Host (immediate ACK)
