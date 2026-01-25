@@ -21,8 +21,9 @@ typedef enum _nxf1_v1_CommandType {
 
 typedef enum _nxf1_v1_InjectionType {
     nxf1_v1_InjectionType_INJ_UNSPECIFIED = 0,
-    nxf1_v1_InjectionType_INJ_BYTE_DROP = 1, /* drop N bytes starting at offset */
-    nxf1_v1_InjectionType_INJ_BIT_FLIP = 2 /* XOR mask over span */
+    nxf1_v1_InjectionType_INJ_BYTE_DROP = 1,
+    nxf1_v1_InjectionType_INJ_BIT_FLIP = 2,
+    nxf1_v1_InjectionType_INJ_PHANTOM_BYTE = 3
 } nxf1_v1_InjectionType;
 
 typedef enum _nxf1_v1_ExecStatus {
@@ -60,6 +61,10 @@ typedef struct _nxf1_v1_BitFlipParams {
     nxf1_v1_BitFlipMode mode; /* mode */
 } nxf1_v1_BitFlipParams;
 
+typedef struct _nxf1_v1_PhantomByteParams {
+    uint32_t bytes;
+} nxf1_v1_PhantomByteParams;
+
 /* Host -> DSI */
 typedef struct _nxf1_v1_DsiCommand {
     uint32_t proto_version; /* e.g., 1 */
@@ -70,8 +75,8 @@ typedef struct _nxf1_v1_DsiCommand {
     pb_size_t which_params;
     union {
         nxf1_v1_ByteDropParams byte_drop;
-        nxf1_v1_BitFlipParams bit_flip; /* DuplicateByteParams dup_byte = 12;
-     InterByteGapParams  gap      = 13; */
+        nxf1_v1_BitFlipParams bit_flip;
+        nxf1_v1_PhantomByteParams phantom_byte;
     } params;
 } nxf1_v1_DsiCommand;
 
@@ -117,8 +122,8 @@ extern "C" {
 #define _nxf1_v1_CommandType_ARRAYSIZE ((nxf1_v1_CommandType)(nxf1_v1_CommandType_CMD_ARM+1))
 
 #define _nxf1_v1_InjectionType_MIN nxf1_v1_InjectionType_INJ_UNSPECIFIED
-#define _nxf1_v1_InjectionType_MAX nxf1_v1_InjectionType_INJ_BIT_FLIP
-#define _nxf1_v1_InjectionType_ARRAYSIZE ((nxf1_v1_InjectionType)(nxf1_v1_InjectionType_INJ_BIT_FLIP+1))
+#define _nxf1_v1_InjectionType_MAX nxf1_v1_InjectionType_INJ_PHANTOM_BYTE
+#define _nxf1_v1_InjectionType_ARRAYSIZE ((nxf1_v1_InjectionType)(nxf1_v1_InjectionType_INJ_PHANTOM_BYTE+1))
 
 #define _nxf1_v1_ExecStatus_MIN nxf1_v1_ExecStatus_STATUS_UNSPECIFIED
 #define _nxf1_v1_ExecStatus_MAX nxf1_v1_ExecStatus_STATUS_ERROR
@@ -138,6 +143,7 @@ extern "C" {
 
 #define nxf1_v1_BitFlipParams_mode_ENUMTYPE nxf1_v1_BitFlipMode
 
+
 #define nxf1_v1_DsiAck_status_ENUMTYPE nxf1_v1_ExecStatus
 
 #define nxf1_v1_TmiReport_status_ENUMTYPE nxf1_v1_ExecStatus
@@ -149,12 +155,14 @@ extern "C" {
 #define nxf1_v1_DsiCommand_init_default          {0, 0, _nxf1_v1_CommandType_MIN, _nxf1_v1_InjectionType_MIN, 0, 0, {nxf1_v1_ByteDropParams_init_default}}
 #define nxf1_v1_ByteDropParams_init_default      {0, 0, ""}
 #define nxf1_v1_BitFlipParams_init_default       {0, 0, "", _nxf1_v1_BitFlipMode_MIN}
+#define nxf1_v1_PhantomByteParams_init_default   {0}
 #define nxf1_v1_DsiAck_init_default              {0, _nxf1_v1_ExecStatus_MIN, 0}
 #define nxf1_v1_TmiReport_init_default           {0, _nxf1_v1_ExecStatus_MIN, _nxf1_v1_TestVerdict_MIN, 0, 0, 0, 0, 0, 0, false, nxf1_v1_TelemetryChunk_init_default}
 #define nxf1_v1_TelemetryChunk_init_default      {0, 0, {{NULL}, NULL}, 0}
 #define nxf1_v1_DsiCommand_init_zero             {0, 0, _nxf1_v1_CommandType_MIN, _nxf1_v1_InjectionType_MIN, 0, 0, {nxf1_v1_ByteDropParams_init_zero}}
 #define nxf1_v1_ByteDropParams_init_zero         {0, 0, ""}
 #define nxf1_v1_BitFlipParams_init_zero          {0, 0, "", _nxf1_v1_BitFlipMode_MIN}
+#define nxf1_v1_PhantomByteParams_init_zero      {0}
 #define nxf1_v1_DsiAck_init_zero                 {0, _nxf1_v1_ExecStatus_MIN, 0}
 #define nxf1_v1_TmiReport_init_zero              {0, _nxf1_v1_ExecStatus_MIN, _nxf1_v1_TestVerdict_MIN, 0, 0, 0, 0, 0, 0, false, nxf1_v1_TelemetryChunk_init_zero}
 #define nxf1_v1_TelemetryChunk_init_zero         {0, 0, {{NULL}, NULL}, 0}
@@ -167,6 +175,7 @@ extern "C" {
 #define nxf1_v1_BitFlipParams_bits_drop_tag      2
 #define nxf1_v1_BitFlipParams_payload_tag        3
 #define nxf1_v1_BitFlipParams_mode_tag           4
+#define nxf1_v1_PhantomByteParams_bytes_tag      1
 #define nxf1_v1_DsiCommand_proto_version_tag     1
 #define nxf1_v1_DsiCommand_id_tag                2
 #define nxf1_v1_DsiCommand_cmd_tag               3
@@ -174,6 +183,7 @@ extern "C" {
 #define nxf1_v1_DsiCommand_duration_ms_tag       5
 #define nxf1_v1_DsiCommand_byte_drop_tag         10
 #define nxf1_v1_DsiCommand_bit_flip_tag          11
+#define nxf1_v1_DsiCommand_phantom_byte_tag      12
 #define nxf1_v1_DsiAck_id_tag                    1
 #define nxf1_v1_DsiAck_status_tag                2
 #define nxf1_v1_DsiAck_error_code_tag            3
@@ -200,11 +210,13 @@ X(a, STATIC,   SINGULAR, UENUM,    cmd,               3) \
 X(a, STATIC,   SINGULAR, UENUM,    inj_type,          4) \
 X(a, STATIC,   SINGULAR, UINT32,   duration_ms,       5) \
 X(a, STATIC,   ONEOF,    MESSAGE,  (params,byte_drop,params.byte_drop),  10) \
-X(a, STATIC,   ONEOF,    MESSAGE,  (params,bit_flip,params.bit_flip),  11)
+X(a, STATIC,   ONEOF,    MESSAGE,  (params,bit_flip,params.bit_flip),  11) \
+X(a, STATIC,   ONEOF,    MESSAGE,  (params,phantom_byte,params.phantom_byte),  12)
 #define nxf1_v1_DsiCommand_CALLBACK NULL
 #define nxf1_v1_DsiCommand_DEFAULT NULL
 #define nxf1_v1_DsiCommand_params_byte_drop_MSGTYPE nxf1_v1_ByteDropParams
 #define nxf1_v1_DsiCommand_params_bit_flip_MSGTYPE nxf1_v1_BitFlipParams
+#define nxf1_v1_DsiCommand_params_phantom_byte_MSGTYPE nxf1_v1_PhantomByteParams
 
 #define nxf1_v1_ByteDropParams_FIELDLIST(X, a) \
 X(a, STATIC,   SINGULAR, UINT32,   start_offset,      1) \
@@ -220,6 +232,11 @@ X(a, STATIC,   SINGULAR, STRING,   payload,           3) \
 X(a, STATIC,   SINGULAR, UENUM,    mode,              4)
 #define nxf1_v1_BitFlipParams_CALLBACK NULL
 #define nxf1_v1_BitFlipParams_DEFAULT NULL
+
+#define nxf1_v1_PhantomByteParams_FIELDLIST(X, a) \
+X(a, STATIC,   SINGULAR, UINT32,   bytes,             1)
+#define nxf1_v1_PhantomByteParams_CALLBACK NULL
+#define nxf1_v1_PhantomByteParams_DEFAULT NULL
 
 #define nxf1_v1_DsiAck_FIELDLIST(X, a) \
 X(a, STATIC,   SINGULAR, UINT32,   id,                1) \
@@ -254,6 +271,7 @@ X(a, STATIC,   SINGULAR, UINT32,   crc32,             4)
 extern const pb_msgdesc_t nxf1_v1_DsiCommand_msg;
 extern const pb_msgdesc_t nxf1_v1_ByteDropParams_msg;
 extern const pb_msgdesc_t nxf1_v1_BitFlipParams_msg;
+extern const pb_msgdesc_t nxf1_v1_PhantomByteParams_msg;
 extern const pb_msgdesc_t nxf1_v1_DsiAck_msg;
 extern const pb_msgdesc_t nxf1_v1_TmiReport_msg;
 extern const pb_msgdesc_t nxf1_v1_TelemetryChunk_msg;
@@ -262,6 +280,7 @@ extern const pb_msgdesc_t nxf1_v1_TelemetryChunk_msg;
 #define nxf1_v1_DsiCommand_fields &nxf1_v1_DsiCommand_msg
 #define nxf1_v1_ByteDropParams_fields &nxf1_v1_ByteDropParams_msg
 #define nxf1_v1_BitFlipParams_fields &nxf1_v1_BitFlipParams_msg
+#define nxf1_v1_PhantomByteParams_fields &nxf1_v1_PhantomByteParams_msg
 #define nxf1_v1_DsiAck_fields &nxf1_v1_DsiAck_msg
 #define nxf1_v1_TmiReport_fields &nxf1_v1_TmiReport_msg
 #define nxf1_v1_TelemetryChunk_fields &nxf1_v1_TelemetryChunk_msg
@@ -274,6 +293,7 @@ extern const pb_msgdesc_t nxf1_v1_TelemetryChunk_msg;
 #define nxf1_v1_ByteDropParams_size              526
 #define nxf1_v1_DsiAck_size                      14
 #define nxf1_v1_DsiCommand_size                  553
+#define nxf1_v1_PhantomByteParams_size           6
 
 #ifdef __cplusplus
 } /* extern "C" */

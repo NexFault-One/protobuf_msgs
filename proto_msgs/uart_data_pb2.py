@@ -24,33 +24,35 @@ _sym_db = _symbol_database.Default()
 
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x0fuart_data.proto\x12\x07nxf1.v1\"\xf5\x01\n\nDsiCommand\x12\x15\n\rproto_version\x18\x01 \x01(\r\x12\n\n\x02id\x18\x02 \x01(\r\x12!\n\x03\x63md\x18\x03 \x01(\x0e\x32\x14.nxf1.v1.CommandType\x12(\n\x08inj_type\x18\x04 \x01(\x0e\x32\x16.nxf1.v1.InjectionType\x12\x13\n\x0b\x64uration_ms\x18\x05 \x01(\r\x12,\n\tbyte_drop\x18\n \x01(\x0b\x32\x17.nxf1.v1.ByteDropParamsH\x00\x12*\n\x08\x62it_flip\x18\x0b \x01(\x0b\x32\x16.nxf1.v1.BitFlipParamsH\x00\x42\x08\n\x06params\"G\n\x0e\x42yteDropParams\x12\x14\n\x0cstart_offset\x18\x01 \x01(\r\x12\x0e\n\x06length\x18\x02 \x01(\r\x12\x0f\n\x07payload\x18\x03 \x01(\t\"j\n\rBitFlipParams\x12\x11\n\tevery_n_p\x18\x01 \x01(\r\x12\x11\n\tbits_drop\x18\x02 \x01(\r\x12\x0f\n\x07payload\x18\x03 \x01(\t\x12\"\n\x04mode\x18\x04 \x01(\x0e\x32\x14.nxf1.v1.BitFlipMode\"M\n\x06\x44siAck\x12\n\n\x02id\x18\x01 \x01(\r\x12#\n\x06status\x18\x02 \x01(\x0e\x32\x13.nxf1.v1.ExecStatus\x12\x12\n\nerror_code\x18\x03 \x01(\r\"\x85\x02\n\tTmiReport\x12\n\n\x02id\x18\x01 \x01(\r\x12#\n\x06status\x18\x02 \x01(\x0e\x32\x13.nxf1.v1.ExecStatus\x12%\n\x07verdict\x18\x03 \x01(\x0e\x32\x14.nxf1.v1.TestVerdict\x12\x13\n\x0bts_start_ms\x18\x04 \x01(\r\x12\x11\n\tts_end_ms\x18\x05 \x01(\r\x12\x10\n\x08\x62ytes_tx\x18\x06 \x01(\r\x12\x10\n\x08\x62ytes_rx\x18\x07 \x01(\r\x12\x15\n\rbytes_dropped\x18\x08 \x01(\r\x12\x15\n\rbytes_flipped\x18\t \x01(\r\x12&\n\x05\x63hunk\x18\x14 \x01(\x0b\x32\x17.nxf1.v1.TelemetryChunk\"Z\n\x0eTelemetryChunk\x12\x13\n\x0b\x63hunk_index\x18\x01 \x01(\r\x12\x13\n\x0b\x63hunk_total\x18\x02 \x01(\r\x12\x0f\n\x07payload\x18\x03 \x01(\x0c\x12\r\n\x05\x63rc32\x18\x04 \x01(\r*\\\n\x0b\x43ommandType\x12\x13\n\x0f\x43MD_UNSPECIFIED\x10\x00\x12\x0c\n\x08\x43MD_PING\x10\x01\x12\x0e\n\nCMD_INJECT\x10\x02\x12\r\n\tCMD_ABORT\x10\x03\x12\x0b\n\x07\x43MD_ARM\x10\x04*I\n\rInjectionType\x12\x13\n\x0fINJ_UNSPECIFIED\x10\x00\x12\x11\n\rINJ_BYTE_DROP\x10\x01\x12\x10\n\x0cINJ_BIT_FLIP\x10\x02*\x85\x01\n\nExecStatus\x12\x16\n\x12STATUS_UNSPECIFIED\x10\x00\x12\x13\n\x0fSTATUS_ACCEPTED\x10\x01\x12\x13\n\x0fSTATUS_REJECTED\x10\x02\x12\x12\n\x0eSTATUS_RUNNING\x10\x03\x12\x0f\n\x0bSTATUS_DONE\x10\x04\x12\x10\n\x0cSTATUS_ERROR\x10\x05*D\n\x0bTestVerdict\x12\x11\n\rVERDICT_UNSET\x10\x00\x12\x10\n\x0cVERDICT_PASS\x10\x01\x12\x10\n\x0cVERDICT_FAIL\x10\x02*\'\n\x0b\x42itFlipMode\x12\n\n\x06RANDOM\x10\x00\x12\x0c\n\x08PERIODIC\x10\x01\x62\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x0fuart_data.proto\x12\x07nxf1.v1\"\xa9\x02\n\nDsiCommand\x12\x15\n\rproto_version\x18\x01 \x01(\r\x12\n\n\x02id\x18\x02 \x01(\r\x12!\n\x03\x63md\x18\x03 \x01(\x0e\x32\x14.nxf1.v1.CommandType\x12(\n\x08inj_type\x18\x04 \x01(\x0e\x32\x16.nxf1.v1.InjectionType\x12\x13\n\x0b\x64uration_ms\x18\x05 \x01(\r\x12,\n\tbyte_drop\x18\n \x01(\x0b\x32\x17.nxf1.v1.ByteDropParamsH\x00\x12*\n\x08\x62it_flip\x18\x0b \x01(\x0b\x32\x16.nxf1.v1.BitFlipParamsH\x00\x12\x32\n\x0cphantom_byte\x18\x0c \x01(\x0b\x32\x1a.nxf1.v1.PhantomByteParamsH\x00\x42\x08\n\x06params\"G\n\x0e\x42yteDropParams\x12\x14\n\x0cstart_offset\x18\x01 \x01(\r\x12\x0e\n\x06length\x18\x02 \x01(\r\x12\x0f\n\x07payload\x18\x03 \x01(\t\"j\n\rBitFlipParams\x12\x11\n\tevery_n_p\x18\x01 \x01(\r\x12\x11\n\tbits_drop\x18\x02 \x01(\r\x12\x0f\n\x07payload\x18\x03 \x01(\t\x12\"\n\x04mode\x18\x04 \x01(\x0e\x32\x14.nxf1.v1.BitFlipMode\"\"\n\x11PhantomByteParams\x12\r\n\x05\x62ytes\x18\x01 \x01(\r\"M\n\x06\x44siAck\x12\n\n\x02id\x18\x01 \x01(\r\x12#\n\x06status\x18\x02 \x01(\x0e\x32\x13.nxf1.v1.ExecStatus\x12\x12\n\nerror_code\x18\x03 \x01(\r\"\x85\x02\n\tTmiReport\x12\n\n\x02id\x18\x01 \x01(\r\x12#\n\x06status\x18\x02 \x01(\x0e\x32\x13.nxf1.v1.ExecStatus\x12%\n\x07verdict\x18\x03 \x01(\x0e\x32\x14.nxf1.v1.TestVerdict\x12\x13\n\x0bts_start_ms\x18\x04 \x01(\r\x12\x11\n\tts_end_ms\x18\x05 \x01(\r\x12\x10\n\x08\x62ytes_tx\x18\x06 \x01(\r\x12\x10\n\x08\x62ytes_rx\x18\x07 \x01(\r\x12\x15\n\rbytes_dropped\x18\x08 \x01(\r\x12\x15\n\rbytes_flipped\x18\t \x01(\r\x12&\n\x05\x63hunk\x18\x14 \x01(\x0b\x32\x17.nxf1.v1.TelemetryChunk\"Z\n\x0eTelemetryChunk\x12\x13\n\x0b\x63hunk_index\x18\x01 \x01(\r\x12\x13\n\x0b\x63hunk_total\x18\x02 \x01(\r\x12\x0f\n\x07payload\x18\x03 \x01(\x0c\x12\r\n\x05\x63rc32\x18\x04 \x01(\r*\\\n\x0b\x43ommandType\x12\x13\n\x0f\x43MD_UNSPECIFIED\x10\x00\x12\x0c\n\x08\x43MD_PING\x10\x01\x12\x0e\n\nCMD_INJECT\x10\x02\x12\r\n\tCMD_ABORT\x10\x03\x12\x0b\n\x07\x43MD_ARM\x10\x04*_\n\rInjectionType\x12\x13\n\x0fINJ_UNSPECIFIED\x10\x00\x12\x11\n\rINJ_BYTE_DROP\x10\x01\x12\x10\n\x0cINJ_BIT_FLIP\x10\x02\x12\x14\n\x10INJ_PHANTOM_BYTE\x10\x03*\x85\x01\n\nExecStatus\x12\x16\n\x12STATUS_UNSPECIFIED\x10\x00\x12\x13\n\x0fSTATUS_ACCEPTED\x10\x01\x12\x13\n\x0fSTATUS_REJECTED\x10\x02\x12\x12\n\x0eSTATUS_RUNNING\x10\x03\x12\x0f\n\x0bSTATUS_DONE\x10\x04\x12\x10\n\x0cSTATUS_ERROR\x10\x05*D\n\x0bTestVerdict\x12\x11\n\rVERDICT_UNSET\x10\x00\x12\x10\n\x0cVERDICT_PASS\x10\x01\x12\x10\n\x0cVERDICT_FAIL\x10\x02*\'\n\x0b\x42itFlipMode\x12\n\n\x06RANDOM\x10\x00\x12\x0c\n\x08PERIODIC\x10\x01\x62\x06proto3')
 
 _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
 _builder.BuildTopDescriptorsAndMessages(DESCRIPTOR, 'uart_data_pb2', _globals)
 if not _descriptor._USE_C_DESCRIPTORS:
   DESCRIPTOR._loaded_options = None
-  _globals['_COMMANDTYPE']._serialized_start=892
-  _globals['_COMMANDTYPE']._serialized_end=984
-  _globals['_INJECTIONTYPE']._serialized_start=986
-  _globals['_INJECTIONTYPE']._serialized_end=1059
-  _globals['_EXECSTATUS']._serialized_start=1062
-  _globals['_EXECSTATUS']._serialized_end=1195
-  _globals['_TESTVERDICT']._serialized_start=1197
-  _globals['_TESTVERDICT']._serialized_end=1265
-  _globals['_BITFLIPMODE']._serialized_start=1267
-  _globals['_BITFLIPMODE']._serialized_end=1306
+  _globals['_COMMANDTYPE']._serialized_start=980
+  _globals['_COMMANDTYPE']._serialized_end=1072
+  _globals['_INJECTIONTYPE']._serialized_start=1074
+  _globals['_INJECTIONTYPE']._serialized_end=1169
+  _globals['_EXECSTATUS']._serialized_start=1172
+  _globals['_EXECSTATUS']._serialized_end=1305
+  _globals['_TESTVERDICT']._serialized_start=1307
+  _globals['_TESTVERDICT']._serialized_end=1375
+  _globals['_BITFLIPMODE']._serialized_start=1377
+  _globals['_BITFLIPMODE']._serialized_end=1416
   _globals['_DSICOMMAND']._serialized_start=29
-  _globals['_DSICOMMAND']._serialized_end=274
-  _globals['_BYTEDROPPARAMS']._serialized_start=276
-  _globals['_BYTEDROPPARAMS']._serialized_end=347
-  _globals['_BITFLIPPARAMS']._serialized_start=349
-  _globals['_BITFLIPPARAMS']._serialized_end=455
-  _globals['_DSIACK']._serialized_start=457
-  _globals['_DSIACK']._serialized_end=534
-  _globals['_TMIREPORT']._serialized_start=537
-  _globals['_TMIREPORT']._serialized_end=798
-  _globals['_TELEMETRYCHUNK']._serialized_start=800
-  _globals['_TELEMETRYCHUNK']._serialized_end=890
+  _globals['_DSICOMMAND']._serialized_end=326
+  _globals['_BYTEDROPPARAMS']._serialized_start=328
+  _globals['_BYTEDROPPARAMS']._serialized_end=399
+  _globals['_BITFLIPPARAMS']._serialized_start=401
+  _globals['_BITFLIPPARAMS']._serialized_end=507
+  _globals['_PHANTOMBYTEPARAMS']._serialized_start=509
+  _globals['_PHANTOMBYTEPARAMS']._serialized_end=543
+  _globals['_DSIACK']._serialized_start=545
+  _globals['_DSIACK']._serialized_end=622
+  _globals['_TMIREPORT']._serialized_start=625
+  _globals['_TMIREPORT']._serialized_end=886
+  _globals['_TELEMETRYCHUNK']._serialized_start=888
+  _globals['_TELEMETRYCHUNK']._serialized_end=978
 # @@protoc_insertion_point(module_scope)

@@ -12,9 +12,9 @@ enum CommandType {
 
 enum InjectionType {
   INJ_UNSPECIFIED = 0;
-  INJ_BYTE_DROP   = 1;  // drop N bytes starting at offset
-  INJ_BIT_FLIP    = 2;  // XOR mask over span
-  // add: INJ_DUP_BYTE, INJ_INTER_BYTE_GAP, INJ_BURST_INSERT, INJ_BREAK
+  INJ_BYTE_DROP   = 1; 
+  INJ_BIT_FLIP    = 2;
+  INJ_PHANTOM_BYTE = 3;
 }
 
 enum ExecStatus {
@@ -39,47 +39,50 @@ enum BitFlipMode {
 
 // Host -> DSI
 message DsiCommand {
-  uint32 proto_version   = 1;   // e.g., 1
-  uint32 id              = 2;   // your correlation/sequence id
-  CommandType cmd        = 3;   // inject, abort, ping, cmd_inject for bytedrop and bitflip
-  InjectionType inj_type = 4;   // required if cmd == CMD_INJECT
-  uint32 duration_ms     = 5;   // 0 means “until complete/next command”
+  uint32 proto_version   = 1; // e.g., 1
+  uint32 id              = 2; // your correlation/sequence id
+  CommandType cmd        = 3; // inject, abort, ping, cmd_inject for bytedrop and bitflip
+  InjectionType inj_type = 4; // required if cmd == CMD_INJECT
+  uint32 duration_ms     = 5; // 0 means “until complete/next command”
 
   oneof params {
     ByteDropParams byte_drop = 10;
     BitFlipParams  bit_flip  = 11;
-    // DuplicateByteParams dup_byte = 12;
-    // InterByteGapParams  gap      = 13;
+    PhantomByteParams phantom_byte = 12;
   }
 }
 
 // Per-injection parameter blocks
 message ByteDropParams {
-  uint32 start_offset = 1;  // where to begin dropping in the stream/frame
-  uint32 length       = 2;  // you just added “any length” – define max
+  uint32 start_offset = 1; // where to begin dropping in the stream/frame
+  uint32 length       = 2; // you just added “any length” – define max
   string payload     = 3;
 }
 
 message BitFlipParams {
   uint32 every_n_p = 1; // if periodic, every_n bits to drop
-  uint32 bits_drop       = 2;     // bits to drop randomly
-  string payload     = 3;     // the message
+  uint32 bits_drop       = 2; // bits to drop randomly
+  string payload     = 3; // the message
   BitFlipMode mode = 4; // mode
+}
+
+message PhantomByteParams {
+  uint32 bytes = 1;
 }
 
 // DSI/TMI -> Host (immediate ACK)
 message DsiAck {
-  uint32 id         = 1;       // echoes DsiCommand.id
-  ExecStatus status = 2;       // ACCEPTED/REJECTED/RUNNING
-  uint32 error_code = 3;       // 0 if ok; else reason (enum/table in docs)
+  uint32 id         = 1; // echoes DsiCommand.id
+  ExecStatus status = 2; // ACCEPTED/REJECTED/RUNNING
+  uint32 error_code = 3; // 0 if ok; else reason (enum/table in docs)
 }
 
 // DSI/TMI -> Host (final report)
 message TmiReport {
-  uint32 id            = 1;    // echoes DsiCommand.id
-  ExecStatus status    = 2;    // DONE or ERROR
-  TestVerdict verdict  = 3;    // PASS/FAIL if you can decide on-box
-  uint32 ts_start_ms   = 4;    // uptime ms
+  uint32 id            = 1; // echoes DsiCommand.id
+  ExecStatus status    = 2; // DONE or ERROR
+  TestVerdict verdict  = 3; // PASS/FAIL if you can decide on-box
+  uint32 ts_start_ms   = 4; // uptime ms
   uint32 ts_end_ms     = 5;
   // basic metrics
   uint32 bytes_tx      = 6;
@@ -92,8 +95,8 @@ message TmiReport {
 }
 
 message TelemetryChunk {
-  uint32 chunk_index   = 1;   // 0..N-1
-  uint32 chunk_total   = 2;   // N
-  bytes  payload       = 3;   // bounded (e.g., <= 512B for UART)
-  uint32 crc32         = 4;   // of payload for transport sanity
+  uint32 chunk_index   = 1; // 0..N-1
+  uint32 chunk_total   = 2; // N
+  bytes  payload       = 3; // bounded (e.g., <= 512B for UART)
+  uint32 crc32         = 4; // of payload for transport sanity
 }
