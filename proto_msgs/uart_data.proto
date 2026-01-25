@@ -33,8 +33,13 @@ enum TestVerdict {
 }
 
 enum BitFlipMode {
-  RANDOM = 0;
-  PERIODIC = 1;
+  BITFLIP_RANDOM = 0;
+  BITFLIP_PERIODIC = 1;
+}
+
+enum PhantomByteMode {
+  PHANTOM_RANDOM = 0;
+  PHANTOM_MANUAL = 1;
 }
 
 // Host -> DSI
@@ -67,7 +72,10 @@ message BitFlipParams {
 }
 
 message PhantomByteParams {
-  uint32 bytes = 1;
+  uint32 offset = 1;
+  uint32 byte_value = 2;
+  string payload = 3;
+  PhantomByteMode mode = 4;
 }
 
 // DSI/TMI -> Host (immediate ACK)

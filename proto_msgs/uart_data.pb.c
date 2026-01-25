@@ -15,7 +15,7 @@ PB_BIND(nxf1_v1_ByteDropParams, nxf1_v1_ByteDropParams, 2)
 PB_BIND(nxf1_v1_BitFlipParams, nxf1_v1_BitFlipParams, 2)
 
 
-PB_BIND(nxf1_v1_PhantomByteParams, nxf1_v1_PhantomByteParams, AUTO)
+PB_BIND(nxf1_v1_PhantomByteParams, nxf1_v1_PhantomByteParams, 2)
 
 
 PB_BIND(nxf1_v1_DsiAck, nxf1_v1_DsiAck, AUTO)
@@ -25,6 +25,8 @@ PB_BIND(nxf1_v1_TmiReport, nxf1_v1_TmiReport, AUTO)
 
 
 PB_BIND(nxf1_v1_TelemetryChunk, nxf1_v1_TelemetryChunk, AUTO)
+
+
 
 
 

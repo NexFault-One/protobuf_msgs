@@ -1,3 +1,4 @@
 # uart_data.options
 nxf1.v1.ByteDropParams.payload max_size:512
 nxf1.v1.BitFlipParams.payload max_size:512
+nxf1.v1.PhantomByteParams.payload max_size:512
