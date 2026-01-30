@@ -42,13 +42,21 @@ enum PhantomByteMode {
   PHANTOM_MANUAL = 1;
 }
 
+enum TransportType {
+  TRANSPORT_UNSPECIFIED = 0;
+  TRANSPORT_UART = 1;
+  TRANSPORT_MODBUS = 2;
+  TRANSPORT_I2C = 3;
+}
+
 // Host -> DSI
 message DsiCommand {
   uint32 proto_version   = 1; // e.g., 1
   uint32 id              = 2; // your correlation/sequence id
   CommandType cmd        = 3; // inject, abort, ping, cmd_inject for bytedrop and bitflip
   InjectionType inj_type = 4; // required if cmd == CMD_INJECT
-  uint32 duration_ms     = 5; // 0 means “until complete/next command”
+  TransportType transport = 5; // which transport protocol to be used
+  uint32 duration_ms     = 6; // 0 means “until complete/next command”
 
   oneof params {
     ByteDropParams byte_drop = 10;
