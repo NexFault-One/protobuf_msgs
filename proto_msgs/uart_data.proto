@@ -57,6 +57,7 @@ message DsiCommand {
   InjectionType inj_type = 4; // required if cmd == CMD_INJECT
   TransportType transport = 5; // which transport protocol to be used
   uint32 duration_ms     = 6; // 0 means “until complete/next command”
+  double sensor_value = 7;
 
   oneof params {
     ByteDropParams byte_drop = 10;
