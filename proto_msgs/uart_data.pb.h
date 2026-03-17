@@ -10,13 +10,11 @@
 #endif
 
 /* Enum definitions */
-/* Common enums */
 typedef enum _nxf1_v1_CommandType {
     nxf1_v1_CommandType_CMD_UNSPECIFIED = 0,
     nxf1_v1_CommandType_CMD_PING = 1,
     nxf1_v1_CommandType_CMD_INJECT = 2,
-    nxf1_v1_CommandType_CMD_ABORT = 3,
-    nxf1_v1_CommandType_CMD_ARM = 4
+    nxf1_v1_CommandType_CMD_ABORT = 3
 } nxf1_v1_CommandType;
 
 typedef enum _nxf1_v1_InjectionType {
@@ -28,18 +26,43 @@ typedef enum _nxf1_v1_InjectionType {
 
 typedef enum _nxf1_v1_ExecStatus {
     nxf1_v1_ExecStatus_STATUS_UNSPECIFIED = 0,
-    nxf1_v1_ExecStatus_STATUS_ACCEPTED = 1,
-    nxf1_v1_ExecStatus_STATUS_REJECTED = 2,
-    nxf1_v1_ExecStatus_STATUS_RUNNING = 3,
-    nxf1_v1_ExecStatus_STATUS_DONE = 4,
-    nxf1_v1_ExecStatus_STATUS_ERROR = 5
+    nxf1_v1_ExecStatus_STATUS_ACCEPTED = 1, /* command accepted by DSI */
+    nxf1_v1_ExecStatus_STATUS_REJECTED = 2, /* command rejected before execution */
+    nxf1_v1_ExecStatus_STATUS_RUNNING = 3, /* execution in progress */
+    nxf1_v1_ExecStatus_STATUS_DONE = 4, /* execution completed */
+    nxf1_v1_ExecStatus_STATUS_ERROR = 5 /* internal DSI error during execution */
 } nxf1_v1_ExecStatus;
 
+/* VERDICT_PASS = UUT rejected corrupted frames properly (good error handling)
+ VERDICT_FAIL = UUT accepted corrupted data (security risk - needs fixing)
+ VERDICT_CRASH = UUT crashed or reset during test (reliability issue)
+ VERDICT_INCONCLUSIVE = test couldn't complete properly (DSI issue or unclear result) */
 typedef enum _nxf1_v1_TestVerdict {
     nxf1_v1_TestVerdict_VERDICT_UNSET = 0,
     nxf1_v1_TestVerdict_VERDICT_PASS = 1,
-    nxf1_v1_TestVerdict_VERDICT_FAIL = 2
+    nxf1_v1_TestVerdict_VERDICT_FAIL = 2,
+    nxf1_v1_TestVerdict_VERDICT_CRASH = 3,
+    nxf1_v1_TestVerdict_VERDICT_INCONCLUSIVE = 4
 } nxf1_v1_TestVerdict;
+
+/* explains WHY a test failed or was inconclusive
+ DSI issues (FAIL_QUEUE_FULL, FAIL_DECODE_ERROR, etc) mean the test is invalid - need to re-run
+ UUT issues (FAIL_UUT_*) are actual test failures - UUT has a problem */
+typedef enum _nxf1_v1_FailureReason {
+    nxf1_v1_FailureReason_FAIL_NONE = 0, /* no failure */
+    /* DSI/system issues - test is unreliable, not UUT's fault */
+    nxf1_v1_FailureReason_FAIL_INVALID_COMMAND = 1, /* command had invalid params */
+    nxf1_v1_FailureReason_FAIL_UNSUPPORTED_TRANSPORT = 2, /* transport not implemented yet */
+    nxf1_v1_FailureReason_FAIL_DECODE_ERROR = 3, /* couldn't decode protobuf or UUT response */
+    nxf1_v1_FailureReason_FAIL_RX_TIMEOUT = 4, /* DSI didn't receive expected data */
+    nxf1_v1_FailureReason_FAIL_TX_ERROR = 5, /* DSI couldn't transmit (hardware issue) */
+    nxf1_v1_FailureReason_FAIL_QUEUE_FULL = 6, /* DSI queue overflowed (too fast, slow down) */
+    nxf1_v1_FailureReason_FAIL_INTERNAL_ERROR = 7, /* DSI software bug */
+    /* UUT issues - actual test failures */
+    nxf1_v1_FailureReason_FAIL_UUT_NO_RESPONSE = 8, /* UUT stopped responding (high timeouts but unclear if crash) */
+    nxf1_v1_FailureReason_FAIL_UUT_PROTOCOL_ERROR = 9, /* UUT sent malformed/invalid response */
+    nxf1_v1_FailureReason_FAIL_UUT_RESET_SUSPECTED = 10 /* UUT likely crashed (10+ consecutive timeouts) */
+} nxf1_v1_FailureReason;
 
 typedef enum _nxf1_v1_BitFlipMode {
     nxf1_v1_BitFlipMode_BITFLIP_RANDOM = 0,
@@ -54,41 +77,53 @@ typedef enum _nxf1_v1_PhantomByteMode {
 typedef enum _nxf1_v1_TransportType {
     nxf1_v1_TransportType_TRANSPORT_UNSPECIFIED = 0,
     nxf1_v1_TransportType_TRANSPORT_UART = 1,
-    nxf1_v1_TransportType_TRANSPORT_MODBUS = 2,
-    nxf1_v1_TransportType_TRANSPORT_I2C = 3
+    nxf1_v1_TransportType_TRANSPORT_MODBUS = 2
 } nxf1_v1_TransportType;
 
 /* Struct definitions */
-/* Per-injection parameter blocks */
 typedef struct _nxf1_v1_ByteDropParams {
-    uint32_t start_offset; /* where to begin dropping in the stream/frame */
-    uint32_t length; /* you just added “any length” – define max */
-    char payload[512];
+    uint32_t start_offset; /* where to start dropping bytes */
+    uint32_t length; /* how many bytes to drop */
+    char payload[512]; /* message to send (UART only, ignored for Modbus) */
 } nxf1_v1_ByteDropParams;
 
 typedef struct _nxf1_v1_BitFlipParams {
-    uint32_t every_n_p; /* if periodic, every_n bits to drop */
-    uint32_t bits_drop; /* bits to drop randomly */
-    char payload[512]; /* the message */
-    nxf1_v1_BitFlipMode mode; /* mode */
+    uint32_t every_n_p; /* if periodic mode, flip every Nth bit */
+    uint32_t bits_drop; /* if random mode, flip N bits total */
+    char payload[512]; /* message to send (UART only, ignored for Modbus) */
+    nxf1_v1_BitFlipMode mode;
 } nxf1_v1_BitFlipParams;
 
 typedef struct _nxf1_v1_PhantomByteParams {
-    uint32_t offset;
-    uint32_t byte_value;
-    char payload[512];
+    uint32_t offset; /* where to inject phantom byte */
+    uint32_t byte_value; /* byte value to inject (e.g., 0xFF) */
+    char payload[512]; /* message to send (UART only, ignored for Modbus) */
     nxf1_v1_PhantomByteMode mode;
 } nxf1_v1_PhantomByteParams;
 
-/* Host -> DSI */
+/* recalculate_crc controls how CRC is handled after injection:
+   false = keep corrupted CRC (fault test - UUT should reject bad frame)
+   true = recalc CRC after injection (security test - frame looks valid but data is corrupted)
+ Example: changing temp from 24C to 35C with valid CRC tests if UUT blindly trusts CRC */
+typedef struct _nxf1_v1_ModbusConfig {
+    uint32_t slave_id; /* Modbus slave address (1-247) */
+    uint32_t func_code; /* Modbus function (0x03=read, 0x06=write, etc) */
+    uint32_t address; /* register or coil address */
+    uint32_t value_or_quantity; /* value to write OR quantity to read */
+    bool recalculate_crc;
+} nxf1_v1_ModbusConfig;
+
 typedef struct _nxf1_v1_DsiCommand {
     uint32_t proto_version; /* e.g., 1 */
-    uint32_t id; /* your correlation/sequence id */
-    nxf1_v1_CommandType cmd; /* inject, abort, ping, cmd_inject for bytedrop and bitflip */
+    uint32_t id; /* unique command id for correlation */
+    nxf1_v1_CommandType cmd; /* inject, abort, ping */
     nxf1_v1_InjectionType inj_type; /* required if cmd == CMD_INJECT */
-    nxf1_v1_TransportType transport; /* which transport protocol to be used */
-    uint32_t duration_ms; /* 0 means “until complete/next command” */
-    double sensor_value;
+    nxf1_v1_TransportType transport; /* UART or Modbus */
+    uint32_t duration_ms; /* 0 = single shot, >0 = continuous injection for N ms */
+    bool has_modbus_rtu_config;
+    nxf1_v1_ModbusConfig modbus_rtu_config;
+    bool burst_mode; /* send frames as fast as possible (no delay) */
+    uint32_t burst_count; /* number of frames in burst */
     pb_size_t which_params;
     union {
         nxf1_v1_ByteDropParams byte_drop;
@@ -97,35 +132,57 @@ typedef struct _nxf1_v1_DsiCommand {
     } params;
 } nxf1_v1_DsiCommand;
 
-/* DSI/TMI -> Host (immediate ACK) */
 typedef struct _nxf1_v1_DsiAck {
     uint32_t id; /* echoes DsiCommand.id */
-    nxf1_v1_ExecStatus status; /* ACCEPTED/REJECTED/RUNNING */
-    uint32_t error_code; /* 0 if ok; else reason (enum/table in docs) */
+    nxf1_v1_ExecStatus status; /* ACCEPTED if command is valid, REJECTED otherwise */
+    uint32_t error_code; /* 0 if accepted, else error reason code */
+    uint32_t timestamp_ms; /* when DSI received the command */
 } nxf1_v1_DsiAck;
 
-typedef struct _nxf1_v1_TelemetryChunk {
-    uint32_t chunk_index; /* 0..N-1 */
-    uint32_t chunk_total; /* N */
-    pb_callback_t payload; /* bounded (e.g., <= 512B for UART) */
-    uint32_t crc32; /* of payload for transport sanity */
-} nxf1_v1_TelemetryChunk;
-
-/* DSI/TMI -> Host (final report) */
 typedef struct _nxf1_v1_TmiReport {
+    /* correlation - match report to command and group related tests */
     uint32_t id; /* echoes DsiCommand.id */
+    uint32_t run_id; /* test campaign id (group related tests) */
+    uint32_t attempt_no; /* retry counter (1st attempt, 2nd attempt, etc) */
+    uint32_t timestamp_ms; /* when test started */
+    /* test config - what was tested */
+    nxf1_v1_InjectionType injection_type;
+    nxf1_v1_TransportType transport_type;
+    uint32_t injection_duration_ms; /* actual duration (may differ from requested) */
+    bool crc_recalculated; /* Modbus only: security test vs fault test */
+    /* traffic counters - total bytes sent/received */
+    uint32_t bytes_transmitted;
+    uint32_t bytes_received;
+    uint32_t bytes_dropped; /* ByteDrop only */
+    uint32_t bits_flipped; /* BitFlip only */
+    uint32_t phantom_bytes_added; /* PhantomByte only */
+    /* frame stats - breakdown of UUT responses
+ responses_ok = UUT accepted frame (BAD - security risk!)
+ responses_error = UUT rejected properly (GOOD)
+ responses_timeout = no response (could be crash or just ignoring) */
+    uint32_t frames_sent;
+    uint32_t responses_ok;
+    uint32_t responses_error;
+    uint32_t responses_timeout;
+    uint32_t consecutive_timeout_streak; /* longest timeout run (10+ = likely crashed) */
+    /* crash detection
+ uut_reset_suspected triggers when consecutive_timeout_streak >= 10 */
+    bool uut_reset_suspected;
+    uint32_t crash_timestamp_ms; /* when crash detected (ms into test), 0 if no crash */
+    /* performance - response time tracking
+ if max >> avg, UUT is slowing down (memory leak or buffer buildup before crash) */
+    uint32_t avg_response_time_ms;
+    uint32_t max_response_time_ms;
+    /* DSI/TMI health - internal system issues
+ decode_error_count = couldn't parse UUT responses (UUT sent garbage)
+ queue_drop_count = DSI overloaded (slow down injection rate if >0) */
+    uint32_t decode_error_count;
+    uint32_t queue_drop_count;
+    /* final verdict */
     nxf1_v1_ExecStatus status; /* DONE or ERROR */
-    nxf1_v1_TestVerdict verdict; /* PASS/FAIL if you can decide on-box */
-    uint32_t ts_start_ms; /* uptime ms */
-    uint32_t ts_end_ms;
-    /* basic metrics */
-    uint32_t bytes_tx;
-    uint32_t bytes_rx;
-    uint32_t bytes_dropped;
-    uint32_t bytes_flipped;
-    /* optional raw telemetry (chunked) */
-    bool has_chunk;
-    nxf1_v1_TelemetryChunk chunk;
+    nxf1_v1_TestVerdict verdict; /* PASS/FAIL/CRASH/INCONCLUSIVE */
+    nxf1_v1_FailureReason reason; /* why test failed */
+    pb_callback_t verdict_message; /* one-sentence summary for dashboard */
 } nxf1_v1_TmiReport;
 
 
@@ -135,8 +192,8 @@ extern "C" {
 
 /* Helper constants for enums */
 #define _nxf1_v1_CommandType_MIN nxf1_v1_CommandType_CMD_UNSPECIFIED
-#define _nxf1_v1_CommandType_MAX nxf1_v1_CommandType_CMD_ARM
-#define _nxf1_v1_CommandType_ARRAYSIZE ((nxf1_v1_CommandType)(nxf1_v1_CommandType_CMD_ARM+1))
+#define _nxf1_v1_CommandType_MAX nxf1_v1_CommandType_CMD_ABORT
+#define _nxf1_v1_CommandType_ARRAYSIZE ((nxf1_v1_CommandType)(nxf1_v1_CommandType_CMD_ABORT+1))
 
 #define _nxf1_v1_InjectionType_MIN nxf1_v1_InjectionType_INJ_UNSPECIFIED
 #define _nxf1_v1_InjectionType_MAX nxf1_v1_InjectionType_INJ_PHANTOM_BYTE
@@ -147,8 +204,12 @@ extern "C" {
 #define _nxf1_v1_ExecStatus_ARRAYSIZE ((nxf1_v1_ExecStatus)(nxf1_v1_ExecStatus_STATUS_ERROR+1))
 
 #define _nxf1_v1_TestVerdict_MIN nxf1_v1_TestVerdict_VERDICT_UNSET
-#define _nxf1_v1_TestVerdict_MAX nxf1_v1_TestVerdict_VERDICT_FAIL
-#define _nxf1_v1_TestVerdict_ARRAYSIZE ((nxf1_v1_TestVerdict)(nxf1_v1_TestVerdict_VERDICT_FAIL+1))
+#define _nxf1_v1_TestVerdict_MAX nxf1_v1_TestVerdict_VERDICT_INCONCLUSIVE
+#define _nxf1_v1_TestVerdict_ARRAYSIZE ((nxf1_v1_TestVerdict)(nxf1_v1_TestVerdict_VERDICT_INCONCLUSIVE+1))
+
+#define _nxf1_v1_FailureReason_MIN nxf1_v1_FailureReason_FAIL_NONE
+#define _nxf1_v1_FailureReason_MAX nxf1_v1_FailureReason_FAIL_UUT_RESET_SUSPECTED
+#define _nxf1_v1_FailureReason_ARRAYSIZE ((nxf1_v1_FailureReason)(nxf1_v1_FailureReason_FAIL_UUT_RESET_SUSPECTED+1))
 
 #define _nxf1_v1_BitFlipMode_MIN nxf1_v1_BitFlipMode_BITFLIP_RANDOM
 #define _nxf1_v1_BitFlipMode_MAX nxf1_v1_BitFlipMode_BITFLIP_PERIODIC
@@ -159,8 +220,8 @@ extern "C" {
 #define _nxf1_v1_PhantomByteMode_ARRAYSIZE ((nxf1_v1_PhantomByteMode)(nxf1_v1_PhantomByteMode_PHANTOM_MANUAL+1))
 
 #define _nxf1_v1_TransportType_MIN nxf1_v1_TransportType_TRANSPORT_UNSPECIFIED
-#define _nxf1_v1_TransportType_MAX nxf1_v1_TransportType_TRANSPORT_I2C
-#define _nxf1_v1_TransportType_ARRAYSIZE ((nxf1_v1_TransportType)(nxf1_v1_TransportType_TRANSPORT_I2C+1))
+#define _nxf1_v1_TransportType_MAX nxf1_v1_TransportType_TRANSPORT_MODBUS
+#define _nxf1_v1_TransportType_ARRAYSIZE ((nxf1_v1_TransportType)(nxf1_v1_TransportType_TRANSPORT_MODBUS+1))
 
 #define nxf1_v1_DsiCommand_cmd_ENUMTYPE nxf1_v1_CommandType
 #define nxf1_v1_DsiCommand_inj_type_ENUMTYPE nxf1_v1_InjectionType
@@ -171,28 +232,31 @@ extern "C" {
 
 #define nxf1_v1_PhantomByteParams_mode_ENUMTYPE nxf1_v1_PhantomByteMode
 
+
 #define nxf1_v1_DsiAck_status_ENUMTYPE nxf1_v1_ExecStatus
 
+#define nxf1_v1_TmiReport_injection_type_ENUMTYPE nxf1_v1_InjectionType
+#define nxf1_v1_TmiReport_transport_type_ENUMTYPE nxf1_v1_TransportType
 #define nxf1_v1_TmiReport_status_ENUMTYPE nxf1_v1_ExecStatus
 #define nxf1_v1_TmiReport_verdict_ENUMTYPE nxf1_v1_TestVerdict
-
+#define nxf1_v1_TmiReport_reason_ENUMTYPE nxf1_v1_FailureReason
 
 
 /* Initializer values for message structs */
-#define nxf1_v1_DsiCommand_init_default          {0, 0, _nxf1_v1_CommandType_MIN, _nxf1_v1_InjectionType_MIN, _nxf1_v1_TransportType_MIN, 0, 0, 0, {nxf1_v1_ByteDropParams_init_default}}
+#define nxf1_v1_DsiCommand_init_default          {0, 0, _nxf1_v1_CommandType_MIN, _nxf1_v1_InjectionType_MIN, _nxf1_v1_TransportType_MIN, 0, false, nxf1_v1_ModbusConfig_init_default, 0, 0, 0, {nxf1_v1_ByteDropParams_init_default}}
 #define nxf1_v1_ByteDropParams_init_default      {0, 0, ""}
 #define nxf1_v1_BitFlipParams_init_default       {0, 0, "", _nxf1_v1_BitFlipMode_MIN}
 #define nxf1_v1_PhantomByteParams_init_default   {0, 0, "", _nxf1_v1_PhantomByteMode_MIN}
-#define nxf1_v1_DsiAck_init_default              {0, _nxf1_v1_ExecStatus_MIN, 0}
-#define nxf1_v1_TmiReport_init_default           {0, _nxf1_v1_ExecStatus_MIN, _nxf1_v1_TestVerdict_MIN, 0, 0, 0, 0, 0, 0, false, nxf1_v1_TelemetryChunk_init_default}
-#define nxf1_v1_TelemetryChunk_init_default      {0, 0, {{NULL}, NULL}, 0}
-#define nxf1_v1_DsiCommand_init_zero             {0, 0, _nxf1_v1_CommandType_MIN, _nxf1_v1_InjectionType_MIN, _nxf1_v1_TransportType_MIN, 0, 0, 0, {nxf1_v1_ByteDropParams_init_zero}}
+#define nxf1_v1_ModbusConfig_init_default        {0, 0, 0, 0, 0}
+#define nxf1_v1_DsiAck_init_default              {0, _nxf1_v1_ExecStatus_MIN, 0, 0}
+#define nxf1_v1_TmiReport_init_default           {0, 0, 0, 0, _nxf1_v1_InjectionType_MIN, _nxf1_v1_TransportType_MIN, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, _nxf1_v1_ExecStatus_MIN, _nxf1_v1_TestVerdict_MIN, _nxf1_v1_FailureReason_MIN, {{NULL}, NULL}}
+#define nxf1_v1_DsiCommand_init_zero             {0, 0, _nxf1_v1_CommandType_MIN, _nxf1_v1_InjectionType_MIN, _nxf1_v1_TransportType_MIN, 0, false, nxf1_v1_ModbusConfig_init_zero, 0, 0, 0, {nxf1_v1_ByteDropParams_init_zero}}
 #define nxf1_v1_ByteDropParams_init_zero         {0, 0, ""}
 #define nxf1_v1_BitFlipParams_init_zero          {0, 0, "", _nxf1_v1_BitFlipMode_MIN}
 #define nxf1_v1_PhantomByteParams_init_zero      {0, 0, "", _nxf1_v1_PhantomByteMode_MIN}
-#define nxf1_v1_DsiAck_init_zero                 {0, _nxf1_v1_ExecStatus_MIN, 0}
-#define nxf1_v1_TmiReport_init_zero              {0, _nxf1_v1_ExecStatus_MIN, _nxf1_v1_TestVerdict_MIN, 0, 0, 0, 0, 0, 0, false, nxf1_v1_TelemetryChunk_init_zero}
-#define nxf1_v1_TelemetryChunk_init_zero         {0, 0, {{NULL}, NULL}, 0}
+#define nxf1_v1_ModbusConfig_init_zero           {0, 0, 0, 0, 0}
+#define nxf1_v1_DsiAck_init_zero                 {0, _nxf1_v1_ExecStatus_MIN, 0, 0}
+#define nxf1_v1_TmiReport_init_zero              {0, 0, 0, 0, _nxf1_v1_InjectionType_MIN, _nxf1_v1_TransportType_MIN, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, _nxf1_v1_ExecStatus_MIN, _nxf1_v1_TestVerdict_MIN, _nxf1_v1_FailureReason_MIN, {{NULL}, NULL}}
 
 /* Field tags (for use in manual encoding/decoding) */
 #define nxf1_v1_ByteDropParams_start_offset_tag  1
@@ -206,33 +270,55 @@ extern "C" {
 #define nxf1_v1_PhantomByteParams_byte_value_tag 2
 #define nxf1_v1_PhantomByteParams_payload_tag    3
 #define nxf1_v1_PhantomByteParams_mode_tag       4
+#define nxf1_v1_ModbusConfig_slave_id_tag        1
+#define nxf1_v1_ModbusConfig_func_code_tag       2
+#define nxf1_v1_ModbusConfig_address_tag         3
+#define nxf1_v1_ModbusConfig_value_or_quantity_tag 4
+#define nxf1_v1_ModbusConfig_recalculate_crc_tag 5
 #define nxf1_v1_DsiCommand_proto_version_tag     1
 #define nxf1_v1_DsiCommand_id_tag                2
 #define nxf1_v1_DsiCommand_cmd_tag               3
 #define nxf1_v1_DsiCommand_inj_type_tag          4
 #define nxf1_v1_DsiCommand_transport_tag         5
 #define nxf1_v1_DsiCommand_duration_ms_tag       6
-#define nxf1_v1_DsiCommand_sensor_value_tag      7
+#define nxf1_v1_DsiCommand_modbus_rtu_config_tag 7
+#define nxf1_v1_DsiCommand_burst_mode_tag        8
+#define nxf1_v1_DsiCommand_burst_count_tag       9
 #define nxf1_v1_DsiCommand_byte_drop_tag         10
 #define nxf1_v1_DsiCommand_bit_flip_tag          11
 #define nxf1_v1_DsiCommand_phantom_byte_tag      12
 #define nxf1_v1_DsiAck_id_tag                    1
 #define nxf1_v1_DsiAck_status_tag                2
 #define nxf1_v1_DsiAck_error_code_tag            3
-#define nxf1_v1_TelemetryChunk_chunk_index_tag   1
-#define nxf1_v1_TelemetryChunk_chunk_total_tag   2
-#define nxf1_v1_TelemetryChunk_payload_tag       3
-#define nxf1_v1_TelemetryChunk_crc32_tag         4
+#define nxf1_v1_DsiAck_timestamp_ms_tag          4
 #define nxf1_v1_TmiReport_id_tag                 1
-#define nxf1_v1_TmiReport_status_tag             2
-#define nxf1_v1_TmiReport_verdict_tag            3
-#define nxf1_v1_TmiReport_ts_start_ms_tag        4
-#define nxf1_v1_TmiReport_ts_end_ms_tag          5
-#define nxf1_v1_TmiReport_bytes_tx_tag           6
-#define nxf1_v1_TmiReport_bytes_rx_tag           7
-#define nxf1_v1_TmiReport_bytes_dropped_tag      8
-#define nxf1_v1_TmiReport_bytes_flipped_tag      9
-#define nxf1_v1_TmiReport_chunk_tag              20
+#define nxf1_v1_TmiReport_run_id_tag             2
+#define nxf1_v1_TmiReport_attempt_no_tag         3
+#define nxf1_v1_TmiReport_timestamp_ms_tag       4
+#define nxf1_v1_TmiReport_injection_type_tag     10
+#define nxf1_v1_TmiReport_transport_type_tag     11
+#define nxf1_v1_TmiReport_injection_duration_ms_tag 12
+#define nxf1_v1_TmiReport_crc_recalculated_tag   13
+#define nxf1_v1_TmiReport_bytes_transmitted_tag  20
+#define nxf1_v1_TmiReport_bytes_received_tag     21
+#define nxf1_v1_TmiReport_bytes_dropped_tag      22
+#define nxf1_v1_TmiReport_bits_flipped_tag       23
+#define nxf1_v1_TmiReport_phantom_bytes_added_tag 24
+#define nxf1_v1_TmiReport_frames_sent_tag        30
+#define nxf1_v1_TmiReport_responses_ok_tag       31
+#define nxf1_v1_TmiReport_responses_error_tag    32
+#define nxf1_v1_TmiReport_responses_timeout_tag  33
+#define nxf1_v1_TmiReport_consecutive_timeout_streak_tag 34
+#define nxf1_v1_TmiReport_uut_reset_suspected_tag 35
+#define nxf1_v1_TmiReport_crash_timestamp_ms_tag 36
+#define nxf1_v1_TmiReport_avg_response_time_ms_tag 40
+#define nxf1_v1_TmiReport_max_response_time_ms_tag 41
+#define nxf1_v1_TmiReport_decode_error_count_tag 50
+#define nxf1_v1_TmiReport_queue_drop_count_tag   51
+#define nxf1_v1_TmiReport_status_tag             60
+#define nxf1_v1_TmiReport_verdict_tag            61
+#define nxf1_v1_TmiReport_reason_tag             62
+#define nxf1_v1_TmiReport_verdict_message_tag    70
 
 /* Struct field encoding specification for nanopb */
 #define nxf1_v1_DsiCommand_FIELDLIST(X, a) \
@@ -242,12 +328,15 @@ X(a, STATIC,   SINGULAR, UENUM,    cmd,               3) \
 X(a, STATIC,   SINGULAR, UENUM,    inj_type,          4) \
 X(a, STATIC,   SINGULAR, UENUM,    transport,         5) \
 X(a, STATIC,   SINGULAR, UINT32,   duration_ms,       6) \
-X(a, STATIC,   SINGULAR, DOUBLE,   sensor_value,      7) \
+X(a, STATIC,   OPTIONAL, MESSAGE,  modbus_rtu_config,   7) \
+X(a, STATIC,   SINGULAR, BOOL,     burst_mode,        8) \
+X(a, STATIC,   SINGULAR, UINT32,   burst_count,       9) \
 X(a, STATIC,   ONEOF,    MESSAGE,  (params,byte_drop,params.byte_drop),  10) \
 X(a, STATIC,   ONEOF,    MESSAGE,  (params,bit_flip,params.bit_flip),  11) \
 X(a, STATIC,   ONEOF,    MESSAGE,  (params,phantom_byte,params.phantom_byte),  12)
 #define nxf1_v1_DsiCommand_CALLBACK NULL
 #define nxf1_v1_DsiCommand_DEFAULT NULL
+#define nxf1_v1_DsiCommand_modbus_rtu_config_MSGTYPE nxf1_v1_ModbusConfig
 #define nxf1_v1_DsiCommand_params_byte_drop_MSGTYPE nxf1_v1_ByteDropParams
 #define nxf1_v1_DsiCommand_params_bit_flip_MSGTYPE nxf1_v1_BitFlipParams
 #define nxf1_v1_DsiCommand_params_phantom_byte_MSGTYPE nxf1_v1_PhantomByteParams
@@ -275,61 +364,80 @@ X(a, STATIC,   SINGULAR, UENUM,    mode,              4)
 #define nxf1_v1_PhantomByteParams_CALLBACK NULL
 #define nxf1_v1_PhantomByteParams_DEFAULT NULL
 
+#define nxf1_v1_ModbusConfig_FIELDLIST(X, a) \
+X(a, STATIC,   SINGULAR, UINT32,   slave_id,          1) \
+X(a, STATIC,   SINGULAR, UINT32,   func_code,         2) \
+X(a, STATIC,   SINGULAR, UINT32,   address,           3) \
+X(a, STATIC,   SINGULAR, UINT32,   value_or_quantity,   4) \
+X(a, STATIC,   SINGULAR, BOOL,     recalculate_crc,   5)
+#define nxf1_v1_ModbusConfig_CALLBACK NULL
+#define nxf1_v1_ModbusConfig_DEFAULT NULL
+
 #define nxf1_v1_DsiAck_FIELDLIST(X, a) \
 X(a, STATIC,   SINGULAR, UINT32,   id,                1) \
 X(a, STATIC,   SINGULAR, UENUM,    status,            2) \
-X(a, STATIC,   SINGULAR, UINT32,   error_code,        3)
+X(a, STATIC,   SINGULAR, UINT32,   error_code,        3) \
+X(a, STATIC,   SINGULAR, UINT32,   timestamp_ms,      4)
 #define nxf1_v1_DsiAck_CALLBACK NULL
 #define nxf1_v1_DsiAck_DEFAULT NULL
 
 #define nxf1_v1_TmiReport_FIELDLIST(X, a) \
 X(a, STATIC,   SINGULAR, UINT32,   id,                1) \
-X(a, STATIC,   SINGULAR, UENUM,    status,            2) \
-X(a, STATIC,   SINGULAR, UENUM,    verdict,           3) \
-X(a, STATIC,   SINGULAR, UINT32,   ts_start_ms,       4) \
-X(a, STATIC,   SINGULAR, UINT32,   ts_end_ms,         5) \
-X(a, STATIC,   SINGULAR, UINT32,   bytes_tx,          6) \
-X(a, STATIC,   SINGULAR, UINT32,   bytes_rx,          7) \
-X(a, STATIC,   SINGULAR, UINT32,   bytes_dropped,     8) \
-X(a, STATIC,   SINGULAR, UINT32,   bytes_flipped,     9) \
-X(a, STATIC,   OPTIONAL, MESSAGE,  chunk,            20)
-#define nxf1_v1_TmiReport_CALLBACK NULL
+X(a, STATIC,   SINGULAR, UINT32,   run_id,            2) \
+X(a, STATIC,   SINGULAR, UINT32,   attempt_no,        3) \
+X(a, STATIC,   SINGULAR, UINT32,   timestamp_ms,      4) \
+X(a, STATIC,   SINGULAR, UENUM,    injection_type,   10) \
+X(a, STATIC,   SINGULAR, UENUM,    transport_type,   11) \
+X(a, STATIC,   SINGULAR, UINT32,   injection_duration_ms,  12) \
+X(a, STATIC,   SINGULAR, BOOL,     crc_recalculated,  13) \
+X(a, STATIC,   SINGULAR, UINT32,   bytes_transmitted,  20) \
+X(a, STATIC,   SINGULAR, UINT32,   bytes_received,   21) \
+X(a, STATIC,   SINGULAR, UINT32,   bytes_dropped,    22) \
+X(a, STATIC,   SINGULAR, UINT32,   bits_flipped,     23) \
+X(a, STATIC,   SINGULAR, UINT32,   phantom_bytes_added,  24) \
+X(a, STATIC,   SINGULAR, UINT32,   frames_sent,      30) \
+X(a, STATIC,   SINGULAR, UINT32,   responses_ok,     31) \
+X(a, STATIC,   SINGULAR, UINT32,   responses_error,  32) \
+X(a, STATIC,   SINGULAR, UINT32,   responses_timeout,  33) \
+X(a, STATIC,   SINGULAR, UINT32,   consecutive_timeout_streak,  34) \
+X(a, STATIC,   SINGULAR, BOOL,     uut_reset_suspected,  35) \
+X(a, STATIC,   SINGULAR, UINT32,   crash_timestamp_ms,  36) \
+X(a, STATIC,   SINGULAR, UINT32,   avg_response_time_ms,  40) \
+X(a, STATIC,   SINGULAR, UINT32,   max_response_time_ms,  41) \
+X(a, STATIC,   SINGULAR, UINT32,   decode_error_count,  50) \
+X(a, STATIC,   SINGULAR, UINT32,   queue_drop_count,  51) \
+X(a, STATIC,   SINGULAR, UENUM,    status,           60) \
+X(a, STATIC,   SINGULAR, UENUM,    verdict,          61) \
+X(a, STATIC,   SINGULAR, UENUM,    reason,           62) \
+X(a, CALLBACK, SINGULAR, STRING,   verdict_message,  70)
+#define nxf1_v1_TmiReport_CALLBACK pb_default_field_callback
 #define nxf1_v1_TmiReport_DEFAULT NULL
-#define nxf1_v1_TmiReport_chunk_MSGTYPE nxf1_v1_TelemetryChunk
-
-#define nxf1_v1_TelemetryChunk_FIELDLIST(X, a) \
-X(a, STATIC,   SINGULAR, UINT32,   chunk_index,       1) \
-X(a, STATIC,   SINGULAR, UINT32,   chunk_total,       2) \
-X(a, CALLBACK, SINGULAR, BYTES,    payload,           3) \
-X(a, STATIC,   SINGULAR, UINT32,   crc32,             4)
-#define nxf1_v1_TelemetryChunk_CALLBACK pb_default_field_callback
-#define nxf1_v1_TelemetryChunk_DEFAULT NULL
 
 extern const pb_msgdesc_t nxf1_v1_DsiCommand_msg;
 extern const pb_msgdesc_t nxf1_v1_ByteDropParams_msg;
 extern const pb_msgdesc_t nxf1_v1_BitFlipParams_msg;
 extern const pb_msgdesc_t nxf1_v1_PhantomByteParams_msg;
+extern const pb_msgdesc_t nxf1_v1_ModbusConfig_msg;
 extern const pb_msgdesc_t nxf1_v1_DsiAck_msg;
 extern const pb_msgdesc_t nxf1_v1_TmiReport_msg;
-extern const pb_msgdesc_t nxf1_v1_TelemetryChunk_msg;
 
 /* Defines for backwards compatibility with code written before nanopb-0.4.0 */
 #define nxf1_v1_DsiCommand_fields &nxf1_v1_DsiCommand_msg
 #define nxf1_v1_ByteDropParams_fields &nxf1_v1_ByteDropParams_msg
 #define nxf1_v1_BitFlipParams_fields &nxf1_v1_BitFlipParams_msg
 #define nxf1_v1_PhantomByteParams_fields &nxf1_v1_PhantomByteParams_msg
+#define nxf1_v1_ModbusConfig_fields &nxf1_v1_ModbusConfig_msg
 #define nxf1_v1_DsiAck_fields &nxf1_v1_DsiAck_msg
 #define nxf1_v1_TmiReport_fields &nxf1_v1_TmiReport_msg
-#define nxf1_v1_TelemetryChunk_fields &nxf1_v1_TelemetryChunk_msg
 
 /* Maximum encoded size of messages (where known) */
 /* nxf1_v1_TmiReport_size depends on runtime parameters */
-/* nxf1_v1_TelemetryChunk_size depends on runtime parameters */
 #define NXF1_V1_UART_DATA_PB_H_MAX_SIZE          nxf1_v1_DsiCommand_size
 #define nxf1_v1_BitFlipParams_size               528
 #define nxf1_v1_ByteDropParams_size              526
-#define nxf1_v1_DsiAck_size                      14
-#define nxf1_v1_DsiCommand_size                  564
+#define nxf1_v1_DsiAck_size                      20
+#define nxf1_v1_DsiCommand_size                  591
+#define nxf1_v1_ModbusConfig_size                26
 #define nxf1_v1_PhantomByteParams_size           528
 
 #ifdef __cplusplus

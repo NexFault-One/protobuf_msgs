@@ -1,39 +1,68 @@
 syntax = "proto3";
 package nxf1.v1;
 
-// Common enums
+// ============================================================================
+// ENUMS
+// ============================================================================
+
 enum CommandType {
   CMD_UNSPECIFIED = 0;
   CMD_PING        = 1;
   CMD_INJECT      = 2;
   CMD_ABORT       = 3;
-  CMD_ARM         = 4;
 }
 
 enum InjectionType {
-  INJ_UNSPECIFIED = 0;
-  INJ_BYTE_DROP   = 1; 
-  INJ_BIT_FLIP    = 2;
+  INJ_UNSPECIFIED  = 0;
+  INJ_BYTE_DROP    = 1; 
+  INJ_BIT_FLIP     = 2;
   INJ_PHANTOM_BYTE = 3;
 }
 
 enum ExecStatus {
   STATUS_UNSPECIFIED = 0;
-  STATUS_ACCEPTED    = 1;
-  STATUS_REJECTED    = 2;
-  STATUS_RUNNING     = 3;
-  STATUS_DONE        = 4;
-  STATUS_ERROR       = 5;
+  STATUS_ACCEPTED    = 1; // command accepted by DSI
+  STATUS_REJECTED    = 2; // command rejected before execution
+  STATUS_RUNNING     = 3; // execution in progress
+  STATUS_DONE        = 4; // execution completed
+  STATUS_ERROR       = 5; // internal DSI error during execution
 }
 
+// VERDICT_PASS = UUT rejected corrupted frames properly (good error handling)
+// VERDICT_FAIL = UUT accepted corrupted data (security risk - needs fixing)
+// VERDICT_CRASH = UUT crashed or reset during test (reliability issue)
+// VERDICT_INCONCLUSIVE = test couldn't complete properly (DSI issue or unclear result)
 enum TestVerdict {
-  VERDICT_UNSET = 0;
-  VERDICT_PASS  = 1;
-  VERDICT_FAIL  = 2;
+  VERDICT_UNSET        = 0;
+  VERDICT_PASS         = 1;
+  VERDICT_FAIL         = 2;
+  VERDICT_CRASH        = 3;
+  VERDICT_INCONCLUSIVE = 4;
+}
+
+// explains WHY a test failed or was inconclusive
+// DSI issues (FAIL_QUEUE_FULL, FAIL_DECODE_ERROR, etc) mean the test is invalid - need to re-run
+// UUT issues (FAIL_UUT_*) are actual test failures - UUT has a problem
+enum FailureReason {
+  FAIL_NONE                 = 0; // no failure
+  
+  // DSI/system issues - test is unreliable, not UUT's fault
+  FAIL_INVALID_COMMAND      = 1; // command had invalid params
+  FAIL_UNSUPPORTED_TRANSPORT = 2; // transport not implemented yet
+  FAIL_DECODE_ERROR         = 3; // couldn't decode protobuf or UUT response
+  FAIL_RX_TIMEOUT           = 4; // DSI didn't receive expected data
+  FAIL_TX_ERROR             = 5; // DSI couldn't transmit (hardware issue)
+  FAIL_QUEUE_FULL           = 6; // DSI queue overflowed (too fast, slow down)
+  FAIL_INTERNAL_ERROR       = 7; // DSI software bug
+  
+  // UUT issues - actual test failures
+  FAIL_UUT_NO_RESPONSE      = 8; // UUT stopped responding (high timeouts but unclear if crash)
+  FAIL_UUT_PROTOCOL_ERROR   = 9; // UUT sent malformed/invalid response
+  FAIL_UUT_RESET_SUSPECTED  = 10; // UUT likely crashed (10+ consecutive timeouts)
 }
 
 enum BitFlipMode {
-  BITFLIP_RANDOM = 0;
+  BITFLIP_RANDOM   = 0;
   BITFLIP_PERIODIC = 1;
 }
 
@@ -44,76 +73,130 @@ enum PhantomByteMode {
 
 enum TransportType {
   TRANSPORT_UNSPECIFIED = 0;
-  TRANSPORT_UART = 1;
-  TRANSPORT_MODBUS = 2;
-  TRANSPORT_I2C = 3;
+  TRANSPORT_UART        = 1;
+  TRANSPORT_MODBUS      = 2;
 }
 
-// Host -> DSI
+// ============================================================================
+// HOST → DSI
+// ============================================================================
+
 message DsiCommand {
   uint32 proto_version   = 1; // e.g., 1
-  uint32 id              = 2; // your correlation/sequence id
-  CommandType cmd        = 3; // inject, abort, ping, cmd_inject for bytedrop and bitflip
+  uint32 id              = 2; // unique command id for correlation
+  CommandType cmd        = 3; // inject, abort, ping
   InjectionType inj_type = 4; // required if cmd == CMD_INJECT
-  TransportType transport = 5; // which transport protocol to be used
-  uint32 duration_ms     = 6; // 0 means “until complete/next command”
-  double sensor_value = 7;
-
+  TransportType transport = 5; // UART or Modbus
+  uint32 duration_ms     = 6; // 0 = single shot, >0 = continuous injection for N ms
+  
+  ModbusConfig modbus_rtu_config = 7;
+  
+  bool burst_mode   = 8; // send frames as fast as possible (no delay)
+  uint32 burst_count = 9; // number of frames in burst
+  
   oneof params {
-    ByteDropParams byte_drop = 10;
-    BitFlipParams  bit_flip  = 11;
+    ByteDropParams byte_drop       = 10;
+    BitFlipParams  bit_flip        = 11;
     PhantomByteParams phantom_byte = 12;
   }
 }
 
-// Per-injection parameter blocks
 message ByteDropParams {
-  uint32 start_offset = 1; // where to begin dropping in the stream/frame
-  uint32 length       = 2; // you just added “any length” – define max
-  string payload     = 3;
+  uint32 start_offset = 1; // where to start dropping bytes
+  uint32 length       = 2; // how many bytes to drop
+  string payload      = 3; // message to send (UART only, ignored for Modbus)
 }
 
 message BitFlipParams {
-  uint32 every_n_p = 1; // if periodic, every_n bits to drop
-  uint32 bits_drop       = 2; // bits to drop randomly
-  string payload     = 3; // the message
-  BitFlipMode mode = 4; // mode
+  uint32 every_n_p = 1; // if periodic mode, flip every Nth bit
+  uint32 bits_drop = 2; // if random mode, flip N bits total
+  string payload   = 3; // message to send (UART only, ignored for Modbus)
+  BitFlipMode mode = 4;
 }
 
 message PhantomByteParams {
-  uint32 offset = 1;
-  uint32 byte_value = 2;
-  string payload = 3;
+  uint32 offset     = 1; // where to inject phantom byte
+  uint32 byte_value = 2; // byte value to inject (e.g., 0xFF)
+  string payload    = 3; // message to send (UART only, ignored for Modbus)
   PhantomByteMode mode = 4;
 }
 
-// DSI/TMI -> Host (immediate ACK)
+// recalculate_crc controls how CRC is handled after injection:
+//   false = keep corrupted CRC (fault test - UUT should reject bad frame)
+//   true = recalc CRC after injection (security test - frame looks valid but data is corrupted)
+// Example: changing temp from 24C to 35C with valid CRC tests if UUT blindly trusts CRC
+message ModbusConfig {
+  uint32 slave_id          = 1; // Modbus slave address (1-247)
+  uint32 func_code         = 2; // Modbus function (0x03=read, 0x06=write, etc)
+  uint32 address           = 3; // register or coil address
+  uint32 value_or_quantity = 4; // value to write OR quantity to read
+  bool recalculate_crc     = 5;
+}
+
+// ============================================================================
+// DSI → HOST (IMMEDIATE ACK)
+// ============================================================================
+
 message DsiAck {
-  uint32 id         = 1; // echoes DsiCommand.id
-  ExecStatus status = 2; // ACCEPTED/REJECTED/RUNNING
-  uint32 error_code = 3; // 0 if ok; else reason (enum/table in docs)
+  uint32 id           = 1; // echoes DsiCommand.id
+  ExecStatus status   = 2; // ACCEPTED if command is valid, REJECTED otherwise
+  uint32 error_code   = 3; // 0 if accepted, else error reason code
+  uint32 timestamp_ms = 4; // when DSI received the command
 }
 
-// DSI/TMI -> Host (final report)
+// ============================================================================
+// TMI → HOST (FINAL REPORT)
+// ============================================================================
+
 message TmiReport {
-  uint32 id            = 1; // echoes DsiCommand.id
-  ExecStatus status    = 2; // DONE or ERROR
-  TestVerdict verdict  = 3; // PASS/FAIL if you can decide on-box
-  uint32 ts_start_ms   = 4; // uptime ms
-  uint32 ts_end_ms     = 5;
-  // basic metrics
-  uint32 bytes_tx      = 6;
-  uint32 bytes_rx      = 7;
-  uint32 bytes_dropped = 8;
-  uint32 bytes_flipped = 9;
-
-  // optional raw telemetry (chunked)
-  TelemetryChunk chunk = 20;
-}
-
-message TelemetryChunk {
-  uint32 chunk_index   = 1; // 0..N-1
-  uint32 chunk_total   = 2; // N
-  bytes  payload       = 3; // bounded (e.g., <= 512B for UART)
-  uint32 crc32         = 4; // of payload for transport sanity
+  // correlation - match report to command and group related tests
+  uint32 id         = 1; // echoes DsiCommand.id
+  uint32 run_id     = 2; // test campaign id (group related tests)
+  uint32 attempt_no = 3; // retry counter (1st attempt, 2nd attempt, etc)
+  uint32 timestamp_ms = 4; // when test started
+  
+  // test config - what was tested
+  InjectionType injection_type     = 10;
+  TransportType transport_type     = 11;
+  uint32 injection_duration_ms     = 12; // actual duration (may differ from requested)
+  bool crc_recalculated            = 13; // Modbus only: security test vs fault test
+  
+  // traffic counters - total bytes sent/received
+  uint32 bytes_transmitted   = 20;
+  uint32 bytes_received      = 21;
+  uint32 bytes_dropped       = 22; // ByteDrop only
+  uint32 bits_flipped        = 23; // BitFlip only
+  uint32 phantom_bytes_added = 24; // PhantomByte only
+  
+  // frame stats - breakdown of UUT responses
+  // responses_ok = UUT accepted frame (BAD - security risk!)
+  // responses_error = UUT rejected properly (GOOD)
+  // responses_timeout = no response (could be crash or just ignoring)
+  uint32 frames_sent                = 30;
+  uint32 responses_ok               = 31;
+  uint32 responses_error            = 32;
+  uint32 responses_timeout          = 33;
+  uint32 consecutive_timeout_streak = 34; // longest timeout run (10+ = likely crashed)
+  
+  // crash detection
+  // uut_reset_suspected triggers when consecutive_timeout_streak >= 10
+  bool uut_reset_suspected = 35;
+  uint32 crash_timestamp_ms = 36; // when crash detected (ms into test), 0 if no crash
+  
+  // performance - response time tracking
+  // if max >> avg, UUT is slowing down (memory leak or buffer buildup before crash)
+  uint32 avg_response_time_ms = 40;
+  uint32 max_response_time_ms = 41;
+  
+  // DSI/TMI health - internal system issues
+  // decode_error_count = couldn't parse UUT responses (UUT sent garbage)
+  // queue_drop_count = DSI overloaded (slow down injection rate if >0)
+  uint32 decode_error_count = 50;
+  uint32 queue_drop_count   = 51;
+  
+  // final verdict
+  ExecStatus status     = 60; // DONE or ERROR
+  TestVerdict verdict   = 61; // PASS/FAIL/CRASH/INCONCLUSIVE
+  FailureReason reason  = 62; // why test failed
+  string verdict_message = 70; // one-sentence summary for dashboard
 }
