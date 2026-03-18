@@ -120,8 +120,8 @@ typedef struct _nxf1_v1_DsiCommand {
     nxf1_v1_InjectionType inj_type; /* required if cmd == CMD_INJECT */
     nxf1_v1_TransportType transport; /* UART or Modbus */
     uint32_t duration_ms; /* 0 = single shot, >0 = continuous injection for N ms */
-    bool has_modbus_rtu_config;
-    nxf1_v1_ModbusConfig modbus_rtu_config;
+    bool has_modbus_config;
+    nxf1_v1_ModbusConfig modbus_config; /* modbus rtu */
     bool burst_mode; /* send frames as fast as possible (no delay) */
     uint32_t burst_count; /* number of frames in burst */
     pb_size_t which_params;
@@ -129,7 +129,6 @@ typedef struct _nxf1_v1_DsiCommand {
         nxf1_v1_ByteDropParams byte_drop;
         nxf1_v1_BitFlipParams bit_flip;
         nxf1_v1_PhantomByteParams phantom_byte;
-        nxf1_v1_ModbusConfig modbus_config;
     } params;
     bool stop;
 } nxf1_v1_DsiCommand;
@@ -283,14 +282,13 @@ extern "C" {
 #define nxf1_v1_DsiCommand_inj_type_tag          4
 #define nxf1_v1_DsiCommand_transport_tag         5
 #define nxf1_v1_DsiCommand_duration_ms_tag       6
-#define nxf1_v1_DsiCommand_modbus_rtu_config_tag 7
+#define nxf1_v1_DsiCommand_modbus_config_tag     7
 #define nxf1_v1_DsiCommand_burst_mode_tag        8
 #define nxf1_v1_DsiCommand_burst_count_tag       9
 #define nxf1_v1_DsiCommand_byte_drop_tag         10
 #define nxf1_v1_DsiCommand_bit_flip_tag          11
 #define nxf1_v1_DsiCommand_phantom_byte_tag      12
-#define nxf1_v1_DsiCommand_modbus_config_tag     13
-#define nxf1_v1_DsiCommand_stop_tag              14
+#define nxf1_v1_DsiCommand_stop_tag              13
 #define nxf1_v1_DsiAck_id_tag                    1
 #define nxf1_v1_DsiAck_status_tag                2
 #define nxf1_v1_DsiAck_error_code_tag            3
@@ -332,21 +330,19 @@ X(a, STATIC,   SINGULAR, UENUM,    cmd,               3) \
 X(a, STATIC,   SINGULAR, UENUM,    inj_type,          4) \
 X(a, STATIC,   SINGULAR, UENUM,    transport,         5) \
 X(a, STATIC,   SINGULAR, UINT32,   duration_ms,       6) \
-X(a, STATIC,   OPTIONAL, MESSAGE,  modbus_rtu_config,   7) \
+X(a, STATIC,   OPTIONAL, MESSAGE,  modbus_config,     7) \
 X(a, STATIC,   SINGULAR, BOOL,     burst_mode,        8) \
 X(a, STATIC,   SINGULAR, UINT32,   burst_count,       9) \
 X(a, STATIC,   ONEOF,    MESSAGE,  (params,byte_drop,params.byte_drop),  10) \
 X(a, STATIC,   ONEOF,    MESSAGE,  (params,bit_flip,params.bit_flip),  11) \
 X(a, STATIC,   ONEOF,    MESSAGE,  (params,phantom_byte,params.phantom_byte),  12) \
-X(a, STATIC,   ONEOF,    MESSAGE,  (params,modbus_config,params.modbus_config),  13) \
-X(a, STATIC,   SINGULAR, BOOL,     stop,             14)
+X(a, STATIC,   SINGULAR, BOOL,     stop,             13)
 #define nxf1_v1_DsiCommand_CALLBACK NULL
 #define nxf1_v1_DsiCommand_DEFAULT NULL
-#define nxf1_v1_DsiCommand_modbus_rtu_config_MSGTYPE nxf1_v1_ModbusConfig
+#define nxf1_v1_DsiCommand_modbus_config_MSGTYPE nxf1_v1_ModbusConfig
 #define nxf1_v1_DsiCommand_params_byte_drop_MSGTYPE nxf1_v1_ByteDropParams
 #define nxf1_v1_DsiCommand_params_bit_flip_MSGTYPE nxf1_v1_BitFlipParams
 #define nxf1_v1_DsiCommand_params_phantom_byte_MSGTYPE nxf1_v1_PhantomByteParams
-#define nxf1_v1_DsiCommand_params_modbus_config_MSGTYPE nxf1_v1_ModbusConfig
 
 #define nxf1_v1_ByteDropParams_FIELDLIST(X, a) \
 X(a, STATIC,   SINGULAR, UINT32,   start_offset,      1) \
