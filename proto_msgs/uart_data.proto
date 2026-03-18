@@ -98,7 +98,10 @@ message DsiCommand {
     ByteDropParams byte_drop       = 10;
     BitFlipParams  bit_flip        = 11;
     PhantomByteParams phantom_byte = 12;
+    ModbusConfig modbus_config = 13;
   }
+
+  bool stop = 14;
 }
 
 message ByteDropParams {

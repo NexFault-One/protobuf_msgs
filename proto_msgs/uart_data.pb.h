@@ -129,7 +129,9 @@ typedef struct _nxf1_v1_DsiCommand {
         nxf1_v1_ByteDropParams byte_drop;
         nxf1_v1_BitFlipParams bit_flip;
         nxf1_v1_PhantomByteParams phantom_byte;
+        nxf1_v1_ModbusConfig modbus_config;
     } params;
+    bool stop;
 } nxf1_v1_DsiCommand;
 
 typedef struct _nxf1_v1_DsiAck {
@@ -243,14 +245,14 @@ extern "C" {
 
 
 /* Initializer values for message structs */
-#define nxf1_v1_DsiCommand_init_default          {0, 0, _nxf1_v1_CommandType_MIN, _nxf1_v1_InjectionType_MIN, _nxf1_v1_TransportType_MIN, 0, false, nxf1_v1_ModbusConfig_init_default, 0, 0, 0, {nxf1_v1_ByteDropParams_init_default}}
+#define nxf1_v1_DsiCommand_init_default          {0, 0, _nxf1_v1_CommandType_MIN, _nxf1_v1_InjectionType_MIN, _nxf1_v1_TransportType_MIN, 0, false, nxf1_v1_ModbusConfig_init_default, 0, 0, 0, {nxf1_v1_ByteDropParams_init_default}, 0}
 #define nxf1_v1_ByteDropParams_init_default      {0, 0, ""}
 #define nxf1_v1_BitFlipParams_init_default       {0, 0, "", _nxf1_v1_BitFlipMode_MIN}
 #define nxf1_v1_PhantomByteParams_init_default   {0, 0, "", _nxf1_v1_PhantomByteMode_MIN}
 #define nxf1_v1_ModbusConfig_init_default        {0, 0, 0, 0, 0}
 #define nxf1_v1_DsiAck_init_default              {0, _nxf1_v1_ExecStatus_MIN, 0, 0}
 #define nxf1_v1_TmiReport_init_default           {0, 0, 0, 0, _nxf1_v1_InjectionType_MIN, _nxf1_v1_TransportType_MIN, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, _nxf1_v1_ExecStatus_MIN, _nxf1_v1_TestVerdict_MIN, _nxf1_v1_FailureReason_MIN, {{NULL}, NULL}}
-#define nxf1_v1_DsiCommand_init_zero             {0, 0, _nxf1_v1_CommandType_MIN, _nxf1_v1_InjectionType_MIN, _nxf1_v1_TransportType_MIN, 0, false, nxf1_v1_ModbusConfig_init_zero, 0, 0, 0, {nxf1_v1_ByteDropParams_init_zero}}
+#define nxf1_v1_DsiCommand_init_zero             {0, 0, _nxf1_v1_CommandType_MIN, _nxf1_v1_InjectionType_MIN, _nxf1_v1_TransportType_MIN, 0, false, nxf1_v1_ModbusConfig_init_zero, 0, 0, 0, {nxf1_v1_ByteDropParams_init_zero}, 0}
 #define nxf1_v1_ByteDropParams_init_zero         {0, 0, ""}
 #define nxf1_v1_BitFlipParams_init_zero          {0, 0, "", _nxf1_v1_BitFlipMode_MIN}
 #define nxf1_v1_PhantomByteParams_init_zero      {0, 0, "", _nxf1_v1_PhantomByteMode_MIN}
@@ -287,6 +289,8 @@ extern "C" {
 #define nxf1_v1_DsiCommand_byte_drop_tag         10
 #define nxf1_v1_DsiCommand_bit_flip_tag          11
 #define nxf1_v1_DsiCommand_phantom_byte_tag      12
+#define nxf1_v1_DsiCommand_modbus_config_tag     13
+#define nxf1_v1_DsiCommand_stop_tag              14
 #define nxf1_v1_DsiAck_id_tag                    1
 #define nxf1_v1_DsiAck_status_tag                2
 #define nxf1_v1_DsiAck_error_code_tag            3
@@ -333,13 +337,16 @@ X(a, STATIC,   SINGULAR, BOOL,     burst_mode,        8) \
 X(a, STATIC,   SINGULAR, UINT32,   burst_count,       9) \
 X(a, STATIC,   ONEOF,    MESSAGE,  (params,byte_drop,params.byte_drop),  10) \
 X(a, STATIC,   ONEOF,    MESSAGE,  (params,bit_flip,params.bit_flip),  11) \
-X(a, STATIC,   ONEOF,    MESSAGE,  (params,phantom_byte,params.phantom_byte),  12)
+X(a, STATIC,   ONEOF,    MESSAGE,  (params,phantom_byte,params.phantom_byte),  12) \
+X(a, STATIC,   ONEOF,    MESSAGE,  (params,modbus_config,params.modbus_config),  13) \
+X(a, STATIC,   SINGULAR, BOOL,     stop,             14)
 #define nxf1_v1_DsiCommand_CALLBACK NULL
 #define nxf1_v1_DsiCommand_DEFAULT NULL
 #define nxf1_v1_DsiCommand_modbus_rtu_config_MSGTYPE nxf1_v1_ModbusConfig
 #define nxf1_v1_DsiCommand_params_byte_drop_MSGTYPE nxf1_v1_ByteDropParams
 #define nxf1_v1_DsiCommand_params_bit_flip_MSGTYPE nxf1_v1_BitFlipParams
 #define nxf1_v1_DsiCommand_params_phantom_byte_MSGTYPE nxf1_v1_PhantomByteParams
+#define nxf1_v1_DsiCommand_params_modbus_config_MSGTYPE nxf1_v1_ModbusConfig
 
 #define nxf1_v1_ByteDropParams_FIELDLIST(X, a) \
 X(a, STATIC,   SINGULAR, UINT32,   start_offset,      1) \
@@ -436,7 +443,7 @@ extern const pb_msgdesc_t nxf1_v1_TmiReport_msg;
 #define nxf1_v1_BitFlipParams_size               528
 #define nxf1_v1_ByteDropParams_size              526
 #define nxf1_v1_DsiAck_size                      20
-#define nxf1_v1_DsiCommand_size                  591
+#define nxf1_v1_DsiCommand_size                  593
 #define nxf1_v1_ModbusConfig_size                26
 #define nxf1_v1_PhantomByteParams_size           528
 
