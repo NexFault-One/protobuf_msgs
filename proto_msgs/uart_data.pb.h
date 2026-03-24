@@ -61,7 +61,8 @@ typedef enum _nxf1_v1_FailureReason {
     /* UUT issues - actual test failures */
     nxf1_v1_FailureReason_FAIL_UUT_NO_RESPONSE = 8, /* UUT stopped responding (high timeouts but unclear if crash) */
     nxf1_v1_FailureReason_FAIL_UUT_PROTOCOL_ERROR = 9, /* UUT sent malformed/invalid response */
-    nxf1_v1_FailureReason_FAIL_UUT_RESET_SUSPECTED = 10 /* UUT likely crashed (10+ consecutive timeouts) */
+    nxf1_v1_FailureReason_FAIL_UUT_RESET_SUSPECTED = 10, /* UUT likely crashed (10+ consecutive timeouts) */
+    nxf1_v1_FailureReason_FAIL_UUT_ACCEPTED_BAD_FRAMES = 11
 } nxf1_v1_FailureReason;
 
 typedef enum _nxf1_v1_BitFlipMode {
@@ -219,8 +220,8 @@ extern "C" {
 #define _nxf1_v1_TestVerdict_ARRAYSIZE ((nxf1_v1_TestVerdict)(nxf1_v1_TestVerdict_VERDICT_INCONCLUSIVE+1))
 
 #define _nxf1_v1_FailureReason_MIN nxf1_v1_FailureReason_FAIL_NONE
-#define _nxf1_v1_FailureReason_MAX nxf1_v1_FailureReason_FAIL_UUT_RESET_SUSPECTED
-#define _nxf1_v1_FailureReason_ARRAYSIZE ((nxf1_v1_FailureReason)(nxf1_v1_FailureReason_FAIL_UUT_RESET_SUSPECTED+1))
+#define _nxf1_v1_FailureReason_MAX nxf1_v1_FailureReason_FAIL_UUT_ACCEPTED_BAD_FRAMES
+#define _nxf1_v1_FailureReason_ARRAYSIZE ((nxf1_v1_FailureReason)(nxf1_v1_FailureReason_FAIL_UUT_ACCEPTED_BAD_FRAMES+1))
 
 #define _nxf1_v1_BitFlipMode_MIN nxf1_v1_BitFlipMode_BITFLIP_RANDOM
 #define _nxf1_v1_BitFlipMode_MAX nxf1_v1_BitFlipMode_BITFLIP_PERIODIC

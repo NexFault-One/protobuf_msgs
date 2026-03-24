@@ -59,6 +59,7 @@ enum FailureReason {
   FAIL_UUT_NO_RESPONSE      = 8; // UUT stopped responding (high timeouts but unclear if crash)
   FAIL_UUT_PROTOCOL_ERROR   = 9; // UUT sent malformed/invalid response
   FAIL_UUT_RESET_SUSPECTED  = 10; // UUT likely crashed (10+ consecutive timeouts)
+  FAIL_UUT_ACCEPTED_BAD_FRAMES = 11;
 }
 
 enum BitFlipMode {
