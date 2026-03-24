@@ -101,6 +101,7 @@ message DsiCommand {
   }
 
   bool stop = 13;
+  uint32 run_id = 14;
 }
 
 message ByteDropParams {
@@ -134,6 +135,18 @@ message ModbusConfig {
   uint32 value_or_quantity = 4; // value to write OR quantity to read
   bool recalculate_crc     = 5;
 }
+// LIST OF FUNCTION CODES:
+/**
+case 0x01: Serial.println("(Read Coils)"); break;
+        case 0x02: Serial.println("(Read Discrete Inputs)"); break;
+        case 0x03: Serial.println("(Read Holding Registers)"); break;
+        case 0x04: Serial.println("(Read Input Registers)"); break;
+        case 0x05: Serial.println("(Write Single Coil)"); break;
+        case 0x06: Serial.println("(Write Single Register)"); break;
+        case 0x0F: Serial.println("(Write Multiple Coils)"); break;
+        case 0x10: Serial.println("(Write Multiple Registers)"); break;
+        default: Serial.println("(Unknown)"); break;
+**/
 
 // ============================================================================
 // DSI → HOST (IMMEDIATE ACK)
@@ -201,4 +214,10 @@ message TmiReport {
   TestVerdict verdict   = 61; // PASS/FAIL/CRASH/INCONCLUSIVE
   FailureReason reason  = 62; // why test failed
   string verdict_message = 70; // one-sentence summary for dashboard
+}
+
+message Envelope {
+  TmiReport report = 1;
+  DsiAck dsi_ack = 2;
+  DsiCommand dsi_command = 3;
 }

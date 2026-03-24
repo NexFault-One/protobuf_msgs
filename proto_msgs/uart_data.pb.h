@@ -131,6 +131,7 @@ typedef struct _nxf1_v1_DsiCommand {
         nxf1_v1_PhantomByteParams phantom_byte;
     } params;
     bool stop;
+    uint32_t run_id;
 } nxf1_v1_DsiCommand;
 
 typedef struct _nxf1_v1_DsiAck {
@@ -185,6 +186,15 @@ typedef struct _nxf1_v1_TmiReport {
     nxf1_v1_FailureReason reason; /* why test failed */
     pb_callback_t verdict_message; /* one-sentence summary for dashboard */
 } nxf1_v1_TmiReport;
+
+typedef struct _nxf1_v1_Envelope {
+    bool has_report;
+    nxf1_v1_TmiReport report;
+    bool has_dsi_ack;
+    nxf1_v1_DsiAck dsi_ack;
+    bool has_dsi_command;
+    nxf1_v1_DsiCommand dsi_command;
+} nxf1_v1_Envelope;
 
 
 #ifdef __cplusplus
@@ -243,21 +253,24 @@ extern "C" {
 #define nxf1_v1_TmiReport_reason_ENUMTYPE nxf1_v1_FailureReason
 
 
+
 /* Initializer values for message structs */
-#define nxf1_v1_DsiCommand_init_default          {0, 0, _nxf1_v1_CommandType_MIN, _nxf1_v1_InjectionType_MIN, _nxf1_v1_TransportType_MIN, 0, false, nxf1_v1_ModbusConfig_init_default, 0, 0, 0, {nxf1_v1_ByteDropParams_init_default}, 0}
+#define nxf1_v1_DsiCommand_init_default          {0, 0, _nxf1_v1_CommandType_MIN, _nxf1_v1_InjectionType_MIN, _nxf1_v1_TransportType_MIN, 0, false, nxf1_v1_ModbusConfig_init_default, 0, 0, 0, {nxf1_v1_ByteDropParams_init_default}, 0, 0}
 #define nxf1_v1_ByteDropParams_init_default      {0, 0, ""}
 #define nxf1_v1_BitFlipParams_init_default       {0, 0, "", _nxf1_v1_BitFlipMode_MIN}
 #define nxf1_v1_PhantomByteParams_init_default   {0, 0, "", _nxf1_v1_PhantomByteMode_MIN}
 #define nxf1_v1_ModbusConfig_init_default        {0, 0, 0, 0, 0}
 #define nxf1_v1_DsiAck_init_default              {0, _nxf1_v1_ExecStatus_MIN, 0, 0}
 #define nxf1_v1_TmiReport_init_default           {0, 0, 0, 0, _nxf1_v1_InjectionType_MIN, _nxf1_v1_TransportType_MIN, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, _nxf1_v1_ExecStatus_MIN, _nxf1_v1_TestVerdict_MIN, _nxf1_v1_FailureReason_MIN, {{NULL}, NULL}}
-#define nxf1_v1_DsiCommand_init_zero             {0, 0, _nxf1_v1_CommandType_MIN, _nxf1_v1_InjectionType_MIN, _nxf1_v1_TransportType_MIN, 0, false, nxf1_v1_ModbusConfig_init_zero, 0, 0, 0, {nxf1_v1_ByteDropParams_init_zero}, 0}
+#define nxf1_v1_Envelope_init_default            {false, nxf1_v1_TmiReport_init_default, false, nxf1_v1_DsiAck_init_default, false, nxf1_v1_DsiCommand_init_default}
+#define nxf1_v1_DsiCommand_init_zero             {0, 0, _nxf1_v1_CommandType_MIN, _nxf1_v1_InjectionType_MIN, _nxf1_v1_TransportType_MIN, 0, false, nxf1_v1_ModbusConfig_init_zero, 0, 0, 0, {nxf1_v1_ByteDropParams_init_zero}, 0, 0}
 #define nxf1_v1_ByteDropParams_init_zero         {0, 0, ""}
 #define nxf1_v1_BitFlipParams_init_zero          {0, 0, "", _nxf1_v1_BitFlipMode_MIN}
 #define nxf1_v1_PhantomByteParams_init_zero      {0, 0, "", _nxf1_v1_PhantomByteMode_MIN}
 #define nxf1_v1_ModbusConfig_init_zero           {0, 0, 0, 0, 0}
 #define nxf1_v1_DsiAck_init_zero                 {0, _nxf1_v1_ExecStatus_MIN, 0, 0}
 #define nxf1_v1_TmiReport_init_zero              {0, 0, 0, 0, _nxf1_v1_InjectionType_MIN, _nxf1_v1_TransportType_MIN, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, _nxf1_v1_ExecStatus_MIN, _nxf1_v1_TestVerdict_MIN, _nxf1_v1_FailureReason_MIN, {{NULL}, NULL}}
+#define nxf1_v1_Envelope_init_zero               {false, nxf1_v1_TmiReport_init_zero, false, nxf1_v1_DsiAck_init_zero, false, nxf1_v1_DsiCommand_init_zero}
 
 /* Field tags (for use in manual encoding/decoding) */
 #define nxf1_v1_ByteDropParams_start_offset_tag  1
@@ -289,6 +302,7 @@ extern "C" {
 #define nxf1_v1_DsiCommand_bit_flip_tag          11
 #define nxf1_v1_DsiCommand_phantom_byte_tag      12
 #define nxf1_v1_DsiCommand_stop_tag              13
+#define nxf1_v1_DsiCommand_run_id_tag            14
 #define nxf1_v1_DsiAck_id_tag                    1
 #define nxf1_v1_DsiAck_status_tag                2
 #define nxf1_v1_DsiAck_error_code_tag            3
@@ -321,6 +335,9 @@ extern "C" {
 #define nxf1_v1_TmiReport_verdict_tag            61
 #define nxf1_v1_TmiReport_reason_tag             62
 #define nxf1_v1_TmiReport_verdict_message_tag    70
+#define nxf1_v1_Envelope_report_tag              1
+#define nxf1_v1_Envelope_dsi_ack_tag             2
+#define nxf1_v1_Envelope_dsi_command_tag         3
 
 /* Struct field encoding specification for nanopb */
 #define nxf1_v1_DsiCommand_FIELDLIST(X, a) \
@@ -336,7 +353,8 @@ X(a, STATIC,   SINGULAR, UINT32,   burst_count,       9) \
 X(a, STATIC,   ONEOF,    MESSAGE,  (params,byte_drop,params.byte_drop),  10) \
 X(a, STATIC,   ONEOF,    MESSAGE,  (params,bit_flip,params.bit_flip),  11) \
 X(a, STATIC,   ONEOF,    MESSAGE,  (params,phantom_byte,params.phantom_byte),  12) \
-X(a, STATIC,   SINGULAR, BOOL,     stop,             13)
+X(a, STATIC,   SINGULAR, BOOL,     stop,             13) \
+X(a, STATIC,   SINGULAR, UINT32,   run_id,           14)
 #define nxf1_v1_DsiCommand_CALLBACK NULL
 #define nxf1_v1_DsiCommand_DEFAULT NULL
 #define nxf1_v1_DsiCommand_modbus_config_MSGTYPE nxf1_v1_ModbusConfig
@@ -416,6 +434,16 @@ X(a, CALLBACK, SINGULAR, STRING,   verdict_message,  70)
 #define nxf1_v1_TmiReport_CALLBACK pb_default_field_callback
 #define nxf1_v1_TmiReport_DEFAULT NULL
 
+#define nxf1_v1_Envelope_FIELDLIST(X, a) \
+X(a, STATIC,   OPTIONAL, MESSAGE,  report,            1) \
+X(a, STATIC,   OPTIONAL, MESSAGE,  dsi_ack,           2) \
+X(a, STATIC,   OPTIONAL, MESSAGE,  dsi_command,       3)
+#define nxf1_v1_Envelope_CALLBACK NULL
+#define nxf1_v1_Envelope_DEFAULT NULL
+#define nxf1_v1_Envelope_report_MSGTYPE nxf1_v1_TmiReport
+#define nxf1_v1_Envelope_dsi_ack_MSGTYPE nxf1_v1_DsiAck
+#define nxf1_v1_Envelope_dsi_command_MSGTYPE nxf1_v1_DsiCommand
+
 extern const pb_msgdesc_t nxf1_v1_DsiCommand_msg;
 extern const pb_msgdesc_t nxf1_v1_ByteDropParams_msg;
 extern const pb_msgdesc_t nxf1_v1_BitFlipParams_msg;
@@ -423,6 +451,7 @@ extern const pb_msgdesc_t nxf1_v1_PhantomByteParams_msg;
 extern const pb_msgdesc_t nxf1_v1_ModbusConfig_msg;
 extern const pb_msgdesc_t nxf1_v1_DsiAck_msg;
 extern const pb_msgdesc_t nxf1_v1_TmiReport_msg;
+extern const pb_msgdesc_t nxf1_v1_Envelope_msg;
 
 /* Defines for backwards compatibility with code written before nanopb-0.4.0 */
 #define nxf1_v1_DsiCommand_fields &nxf1_v1_DsiCommand_msg
@@ -432,14 +461,16 @@ extern const pb_msgdesc_t nxf1_v1_TmiReport_msg;
 #define nxf1_v1_ModbusConfig_fields &nxf1_v1_ModbusConfig_msg
 #define nxf1_v1_DsiAck_fields &nxf1_v1_DsiAck_msg
 #define nxf1_v1_TmiReport_fields &nxf1_v1_TmiReport_msg
+#define nxf1_v1_Envelope_fields &nxf1_v1_Envelope_msg
 
 /* Maximum encoded size of messages (where known) */
 /* nxf1_v1_TmiReport_size depends on runtime parameters */
+/* nxf1_v1_Envelope_size depends on runtime parameters */
 #define NXF1_V1_UART_DATA_PB_H_MAX_SIZE          nxf1_v1_DsiCommand_size
 #define nxf1_v1_BitFlipParams_size               528
 #define nxf1_v1_ByteDropParams_size              526
 #define nxf1_v1_DsiAck_size                      20
-#define nxf1_v1_DsiCommand_size                  593
+#define nxf1_v1_DsiCommand_size                  599
 #define nxf1_v1_ModbusConfig_size                26
 #define nxf1_v1_PhantomByteParams_size           528
 

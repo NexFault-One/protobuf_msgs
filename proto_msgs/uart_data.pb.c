@@ -27,6 +27,9 @@ PB_BIND(nxf1_v1_DsiAck, nxf1_v1_DsiAck, AUTO)
 PB_BIND(nxf1_v1_TmiReport, nxf1_v1_TmiReport, 2)
 
 
+PB_BIND(nxf1_v1_Envelope, nxf1_v1_Envelope, 2)
+
+
 
 
 
