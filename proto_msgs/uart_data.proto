@@ -133,8 +133,9 @@ message ModbusConfig {
   uint32 slave_id          = 1; // Modbus slave address (1-247)
   uint32 func_code         = 2; // Modbus function (0x03=read, 0x06=write, etc)
   uint32 address           = 3; // register or coil address
-  uint32 value_or_quantity = 4; // value to write OR quantity to read
+  uint32 value_or_quantity = 4; // value (0x06 func code) to write OR quantity to read or (for Multiple registers (0x10) it is the quantity of registers/data needed)
   bool recalculate_crc     = 5;
+  repeated uint32 register_values = 6; // only for func code 0x10 (array that will contains values)
 }
 // LIST OF FUNCTION CODES:
 /**

@@ -110,8 +110,10 @@ typedef struct _nxf1_v1_ModbusConfig {
     uint32_t slave_id; /* Modbus slave address (1-247) */
     uint32_t func_code; /* Modbus function (0x03=read, 0x06=write, etc) */
     uint32_t address; /* register or coil address */
-    uint32_t value_or_quantity; /* value to write OR quantity to read */
+    uint32_t value_or_quantity; /* value (0x06 func code) to write OR quantity to read or (for Multiple registers (0x10) it is the quantity of registers/data needed) */
     bool recalculate_crc;
+    pb_size_t register_values_count;
+    uint32_t register_values[16]; /* only for func code 0x10 (array that will contains values) */
 } nxf1_v1_ModbusConfig;
 
 typedef struct _nxf1_v1_DsiCommand {
@@ -261,7 +263,7 @@ extern "C" {
 #define nxf1_v1_ByteDropParams_init_default      {0, 0, ""}
 #define nxf1_v1_BitFlipParams_init_default       {0, 0, "", _nxf1_v1_BitFlipMode_MIN}
 #define nxf1_v1_PhantomByteParams_init_default   {0, 0, "", _nxf1_v1_PhantomByteMode_MIN}
-#define nxf1_v1_ModbusConfig_init_default        {0, 0, 0, 0, 0}
+#define nxf1_v1_ModbusConfig_init_default        {0, 0, 0, 0, 0, 0, {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}}
 #define nxf1_v1_DsiAck_init_default              {0, _nxf1_v1_ExecStatus_MIN, 0, 0}
 #define nxf1_v1_TmiReport_init_default           {0, 0, 0, 0, _nxf1_v1_InjectionType_MIN, _nxf1_v1_TransportType_MIN, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, _nxf1_v1_ExecStatus_MIN, _nxf1_v1_TestVerdict_MIN, _nxf1_v1_FailureReason_MIN, {{NULL}, NULL}, ""}
 #define nxf1_v1_Envelope_init_default            {false, nxf1_v1_TmiReport_init_default, false, nxf1_v1_DsiAck_init_default, false, nxf1_v1_DsiCommand_init_default}
@@ -269,7 +271,7 @@ extern "C" {
 #define nxf1_v1_ByteDropParams_init_zero         {0, 0, ""}
 #define nxf1_v1_BitFlipParams_init_zero          {0, 0, "", _nxf1_v1_BitFlipMode_MIN}
 #define nxf1_v1_PhantomByteParams_init_zero      {0, 0, "", _nxf1_v1_PhantomByteMode_MIN}
-#define nxf1_v1_ModbusConfig_init_zero           {0, 0, 0, 0, 0}
+#define nxf1_v1_ModbusConfig_init_zero           {0, 0, 0, 0, 0, 0, {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}}
 #define nxf1_v1_DsiAck_init_zero                 {0, _nxf1_v1_ExecStatus_MIN, 0, 0}
 #define nxf1_v1_TmiReport_init_zero              {0, 0, 0, 0, _nxf1_v1_InjectionType_MIN, _nxf1_v1_TransportType_MIN, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, _nxf1_v1_ExecStatus_MIN, _nxf1_v1_TestVerdict_MIN, _nxf1_v1_FailureReason_MIN, {{NULL}, NULL}, ""}
 #define nxf1_v1_Envelope_init_zero               {false, nxf1_v1_TmiReport_init_zero, false, nxf1_v1_DsiAck_init_zero, false, nxf1_v1_DsiCommand_init_zero}
@@ -291,6 +293,7 @@ extern "C" {
 #define nxf1_v1_ModbusConfig_address_tag         3
 #define nxf1_v1_ModbusConfig_value_or_quantity_tag 4
 #define nxf1_v1_ModbusConfig_recalculate_crc_tag 5
+#define nxf1_v1_ModbusConfig_register_values_tag 6
 #define nxf1_v1_DsiCommand_proto_version_tag     1
 #define nxf1_v1_DsiCommand_id_tag                2
 #define nxf1_v1_DsiCommand_cmd_tag               3
@@ -393,7 +396,8 @@ X(a, STATIC,   SINGULAR, UINT32,   slave_id,          1) \
 X(a, STATIC,   SINGULAR, UINT32,   func_code,         2) \
 X(a, STATIC,   SINGULAR, UINT32,   address,           3) \
 X(a, STATIC,   SINGULAR, UINT32,   value_or_quantity,   4) \
-X(a, STATIC,   SINGULAR, BOOL,     recalculate_crc,   5)
+X(a, STATIC,   SINGULAR, BOOL,     recalculate_crc,   5) \
+X(a, STATIC,   REPEATED, UINT32,   register_values,   6)
 #define nxf1_v1_ModbusConfig_CALLBACK NULL
 #define nxf1_v1_ModbusConfig_DEFAULT NULL
 
@@ -474,8 +478,8 @@ extern const pb_msgdesc_t nxf1_v1_Envelope_msg;
 #define nxf1_v1_BitFlipParams_size               528
 #define nxf1_v1_ByteDropParams_size              526
 #define nxf1_v1_DsiAck_size                      20
-#define nxf1_v1_DsiCommand_size                  599
-#define nxf1_v1_ModbusConfig_size                26
+#define nxf1_v1_DsiCommand_size                  695
+#define nxf1_v1_ModbusConfig_size                122
 #define nxf1_v1_PhantomByteParams_size           528
 
 #ifdef __cplusplus
