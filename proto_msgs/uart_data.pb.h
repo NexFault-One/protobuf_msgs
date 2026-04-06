@@ -189,6 +189,7 @@ typedef struct _nxf1_v1_TmiReport {
     nxf1_v1_FailureReason reason; /* why test failed */
     pb_callback_t verdict_message; /* one-sentence summary for dashboard */
     char final_frame[512];
+    char original_frame[512];
 } nxf1_v1_TmiReport;
 
 typedef struct _nxf1_v1_Envelope {
@@ -265,7 +266,7 @@ extern "C" {
 #define nxf1_v1_PhantomByteParams_init_default   {0, 0, "", _nxf1_v1_PhantomByteMode_MIN}
 #define nxf1_v1_ModbusConfig_init_default        {0, 0, 0, 0, 0, 0, {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}}
 #define nxf1_v1_DsiAck_init_default              {0, _nxf1_v1_ExecStatus_MIN, 0, 0}
-#define nxf1_v1_TmiReport_init_default           {0, 0, 0, 0, _nxf1_v1_InjectionType_MIN, _nxf1_v1_TransportType_MIN, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, _nxf1_v1_ExecStatus_MIN, _nxf1_v1_TestVerdict_MIN, _nxf1_v1_FailureReason_MIN, {{NULL}, NULL}, ""}
+#define nxf1_v1_TmiReport_init_default           {0, 0, 0, 0, _nxf1_v1_InjectionType_MIN, _nxf1_v1_TransportType_MIN, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, _nxf1_v1_ExecStatus_MIN, _nxf1_v1_TestVerdict_MIN, _nxf1_v1_FailureReason_MIN, {{NULL}, NULL}, "", ""}
 #define nxf1_v1_Envelope_init_default            {false, nxf1_v1_TmiReport_init_default, false, nxf1_v1_DsiAck_init_default, false, nxf1_v1_DsiCommand_init_default}
 #define nxf1_v1_DsiCommand_init_zero             {0, 0, _nxf1_v1_CommandType_MIN, _nxf1_v1_InjectionType_MIN, _nxf1_v1_TransportType_MIN, 0, false, nxf1_v1_ModbusConfig_init_zero, 0, 0, 0, {nxf1_v1_ByteDropParams_init_zero}, 0, 0}
 #define nxf1_v1_ByteDropParams_init_zero         {0, 0, ""}
@@ -273,7 +274,7 @@ extern "C" {
 #define nxf1_v1_PhantomByteParams_init_zero      {0, 0, "", _nxf1_v1_PhantomByteMode_MIN}
 #define nxf1_v1_ModbusConfig_init_zero           {0, 0, 0, 0, 0, 0, {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}}
 #define nxf1_v1_DsiAck_init_zero                 {0, _nxf1_v1_ExecStatus_MIN, 0, 0}
-#define nxf1_v1_TmiReport_init_zero              {0, 0, 0, 0, _nxf1_v1_InjectionType_MIN, _nxf1_v1_TransportType_MIN, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, _nxf1_v1_ExecStatus_MIN, _nxf1_v1_TestVerdict_MIN, _nxf1_v1_FailureReason_MIN, {{NULL}, NULL}, ""}
+#define nxf1_v1_TmiReport_init_zero              {0, 0, 0, 0, _nxf1_v1_InjectionType_MIN, _nxf1_v1_TransportType_MIN, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, _nxf1_v1_ExecStatus_MIN, _nxf1_v1_TestVerdict_MIN, _nxf1_v1_FailureReason_MIN, {{NULL}, NULL}, "", ""}
 #define nxf1_v1_Envelope_init_zero               {false, nxf1_v1_TmiReport_init_zero, false, nxf1_v1_DsiAck_init_zero, false, nxf1_v1_DsiCommand_init_zero}
 
 /* Field tags (for use in manual encoding/decoding) */
@@ -341,6 +342,7 @@ extern "C" {
 #define nxf1_v1_TmiReport_reason_tag             62
 #define nxf1_v1_TmiReport_verdict_message_tag    70
 #define nxf1_v1_TmiReport_final_frame_tag        71
+#define nxf1_v1_TmiReport_original_frame_tag     72
 #define nxf1_v1_Envelope_report_tag              1
 #define nxf1_v1_Envelope_dsi_ack_tag             2
 #define nxf1_v1_Envelope_dsi_command_tag         3
@@ -438,7 +440,8 @@ X(a, STATIC,   SINGULAR, UENUM,    status,           60) \
 X(a, STATIC,   SINGULAR, UENUM,    verdict,          61) \
 X(a, STATIC,   SINGULAR, UENUM,    reason,           62) \
 X(a, CALLBACK, SINGULAR, STRING,   verdict_message,  70) \
-X(a, STATIC,   SINGULAR, STRING,   final_frame,      71)
+X(a, STATIC,   SINGULAR, STRING,   final_frame,      71) \
+X(a, STATIC,   SINGULAR, STRING,   original_frame,   72)
 #define nxf1_v1_TmiReport_CALLBACK pb_default_field_callback
 #define nxf1_v1_TmiReport_DEFAULT NULL
 

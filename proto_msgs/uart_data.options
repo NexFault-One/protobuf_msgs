@@ -3,4 +3,5 @@ nxf1.v1.ByteDropParams.payload max_size:512
 nxf1.v1.BitFlipParams.payload max_size:512
 nxf1.v1.PhantomByteParams.payload max_size:512
 nxf1.v1.TmiReport.final_frame max_size:512
+nxf1.v1.TmiReport.original_frame max_size:512
 nxf1.v1.ModbusConfig.register_values max_count:16

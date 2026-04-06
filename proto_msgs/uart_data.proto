@@ -190,6 +190,7 @@ message TmiReport {
   // responses_error = UUT rejected properly (GOOD)
   // responses_timeout = no response (could be crash or just ignoring)
   uint32 frames_sent                = 30;
+  string original_frame             = 72;
   string final_frame                = 71;
   uint32 responses_ok               = 31;
   uint32 responses_error            = 32;
